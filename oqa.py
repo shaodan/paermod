@@ -141,12 +141,75 @@ def parse_deepspace(month):
                     # print line
                     out.write(','.join([str(l) for l in line])+'\n')
 
+def fuck_how_to_end_this_1():
+    u'气象/EX01_SF.OQA'
+    book = xlrd.open_workbook(u'气象/地面气象汇总.xlsx')
+    # print book.sheet_names()
+    sample = ' 13010300    -9 99999 10030   300 00000 09999 00300 00300 00300 00300\n         00300 09999 00000 00099 00999 99999   -22   999   999   999    30    36  N'
+    for sheet in book.sheets():
+        month = sheet.name
+        oqa = open('Beijing_SF_13' + month + '.OQA', 'w')
+        # print sheet.row(1)
+        r = -2
+        for row in sheet.get_rows():
+            r += 1
+            if r<0:
+                continue
+            line = [' 13%s03%02d' % (month, r)]
+            # print row
+            for cell in row[1:]:
+                if cell.ctype == 1:  # text
+                    cell_s = cell.value
+                else:               # number
+                    cell_s = '%5.0f' % cell.value
+                line.append(cell_s)
+            line.append(' N')
+            # print sample
+            # print ' '.join(line[:11]) + '\n         ' + ' '.join(line[11:])
+            oqa.write(' '.join(line[:11]) + '\n         ' + ' '.join(line[11:]) + '\n')
+        oqa.close()
+
+def fuck_how_to_end_this_2():
+    book = xlrd.open_workbook(u'气象/探空插值.xlsx')
+    sheet1, sheet2 =  book.sheets()
+    sample = ' 13010407   28\n  10134      0   -160   -182    170     10'
+    # print sample
+    months = [('01','07'), ('01','19'), ('04','07'), ('04','19'), ('10','07'), ('10','19'), ('07','07'), ('07','19')]
+    slices = [(0, 6),  (7, 13),  (14, 20),  (21, 27),  (28, 34),  (35, 41), (0, 6),  (7, 13)]
+    lines = []
+    for month, s in zip(months, slices):
+        start_line = 2 if month[0] == '07' else 3
+        sheet = sheet2 if month[0] == '07' else sheet1
+        for r in range(start_line, sheet.nrows):
+            row = sheet.row_slice(r, s[0], s[1])
+            line = []
+            for cell in row:
+                line.append('%7.0f' % cell.value)
+            lines.append(''.join(line))
+        if month[1] == '19':
+            oqa = open('Beijing_UA_13' + month[0] + '.OQA', 'w')
+            for i in range(2, 5):
+                line_num = len(lines) / 2
+                oqa.write(' 13%s%02d%s   %d\n' % (month[0], i, '07', line_num))
+                for j in range(line_num):
+                    oqa.write(lines[j]+'\n')
+                oqa.write(' 13%s%02d%s   %d\n' % (month[0], i, '19', line_num))
+                for j in range(line_num, len(lines)):
+                    oqa.write(lines[j]+'\n')
+            oqa.close()
+            lines = []
+
+
+fuck_how_to_end_this_1()
+fuck_how_to_end_this_2()
+
+
 # dates = ['2013.01', '2013.04', '2013.07', '2013.10']
 # for date in dates:
 #     print 'parsing ' + date
 #     parse_oqa(date)
 
-months = [1, 4, 7, 10]
-for month in months:
-    print 'parsing ' + str(month)
-    parse_deepspace(month)
+# months = [1, 4, 7, 10]
+# for month in months:
+#     print 'parsing ' + str(month)
+#     parse_deepspace(month)
