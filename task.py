@@ -40,6 +40,7 @@ class Task(object):
     def start(self):
         self.state = Task.STATE_NEW
         self.prepare()
+        #return self
         run_command = "cd %s && nohup ./run.sh > run.log &" % self.path
         print run_command
         output = self.server.run_bg(run_command)
@@ -66,7 +67,8 @@ class Task(object):
         shutil.copy2(self.get_inp(), self.path+"/aermod.inp")
         for mp in self.get_MP():
             shutil.copy2(mp, self.path)
-        shutil.copy2(self.get_HOUREMIS(), self.path+"/HOUREMIS")
+        shutil.copy2(self.get_source(), self.path+"/source")
+        # shutil.copy2(self.get_HOUREMIS(), self.path+"/HOUREMIS")
         shutil.copy2(os.getcwd()+"/run.sh", self.path)
 
     def change_state(self, new_state):
@@ -161,7 +163,7 @@ class Task(object):
                 shutil.copy2(source, target)
 
     def get_common_files(self):
-        files = map(lambda f: Task.SOURCE_FILE_PATH+f, ["aermod", "source", "receptor"])
+        files = map(lambda f: Task.SOURCE_FILE_PATH+f, ["aermod", "receptor"])
         return files
 
     def get_inp(self):
@@ -173,6 +175,9 @@ class Task(object):
         pfl = Task.SOURCE_FILE_PATH+"MPs/13"+self.date+"/MP.PFL"
         sfc = Task.SOURCE_FILE_PATH+"MPs/13"+self.date+"/MP.SFC"
         return [pfl, sfc]
+
+    def get_source(self):
+        return "%ssources/source_%s_%s" % (Task.SOURCE_FILE_PATH, self.pollutant, self.hour)
 
     def get_HOUREMIS(self):
         # todo NO2 -> NOX

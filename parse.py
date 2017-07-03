@@ -31,7 +31,9 @@ def parse_inp():
                 with open(in_file, 'r') as inp:
                     out = open(out_file, 'w')
                     for line in inp:
-                        if line.startswith('AVERTIME', 3):
+                        if line.startswith('SO HOUREMIS'):
+                            pass
+                        elif line.startswith('AVERTIME', 3):
                             out.write("   AVERTIME  1\n")
                         elif p == 'NO2' and line.startswith('OZONEVAL', 3):
                             out.write(NO2[date]+'\n')
@@ -152,7 +154,7 @@ def parse_source():
                     i+= 1
 
 
-# parse_inp()
+parse_inp()
 # parse_houremis()
 # parse_source()
-parse_source_from_excel()
+# parse_source_from_excel()
