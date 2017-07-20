@@ -42,9 +42,11 @@ class DBMongo(DB):
             host = s['host'].encode()
             workspace = s['workspace'].encode()
             if host == self.context.Master:
-                server_list.append(LocalServer(workspace))
+                new_server = LocalServer(workspace)
             else:
-                server_list.append(Server(host, workspace))
+                new_server = Server(host, workspace)
+            # new_server.weight = s['weight']
+            server_list.append(new_server)
         self.servers = server_list
         self.server_table = {server.host: server for server in server_list}
 

@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import xlsxwriter
+import os.path
 
 
 pollutants = ["BC", "CO", "PM", "NO"]
@@ -12,17 +13,26 @@ end_str = ' *** AERMOD - VERSION'
 
 receptor_number = sum(1 for line in open('../source/receptor', 'r'))
 
-#pd = {
-#    "BC": ["0103", "0403", "0703", "1003"],
-#    "CO": ["0103", "0403", "1003"],
-#    "PM": ["0103", "0403", "0703", "1003"]
-#}
 pd = {
-    "CO": ["0703"]
+    "BC": ["0103", "0403", "0703", "1003"],
+    "CO": ["0103", "0403", "1003"],
+    "PM": ["0103", "0403", "0703", "1003"]
+}
+pd = {
+    "PM": ["0403"]
 }
 
 def parse_pd(p, d):
+    if os.path.exists('../excel/%s_%s.xlsx' % (p, d)):
+        print '%s_%s.xlsx already exist' % (p, d)
+        return
     day_data = [None] * 24
+    for hour in hours:
+        h = '0'+str(hour) if hour < 10 else str(hour)
+        task = "%s_%s_%s" % (p, d, h)
+        if not os.path.exists(output_dir+task+'.out'):
+            print 'outfile not found for task: ' + task
+            return 
     for hour in hours:
         h = '0'+str(hour) if hour < 10 else str(hour)
         task = "%s_%s_%s" % (p, d, h)
@@ -60,7 +70,9 @@ def parse_pd(p, d):
             worksheet.write(row, col, day_data[col-1][row-1])
     workbook.close()
 
-for p, dates in pd.items():
+#for p, dates in pd.items():
+#    for d in dates:
+for p in pollutants[:-1]:
     for d in dates:
         parse_pd(p, d)
 

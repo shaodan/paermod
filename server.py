@@ -13,7 +13,6 @@ from context import AppContext
 
 class Server(object):
     context = AppContext()
-
     def __init__(self, host, workspace=None):
         self.local = (host == '')
         self.host = host if not self.local else 'sheet20'
@@ -23,6 +22,15 @@ class Server(object):
         self.setup()
         self.tasks = {}
         self.state = ServerState(self)
+        self.weight = {
+            'sheet20' : 3,
+            'sheet21' : 3,
+            'sheet16' : 1,
+            'sheet17' : 1,
+            'sheet18' : 1,
+            'sheet19' : 1,
+        }[self.host]
+
 
     def setup(self):
         # establish ssh connection
@@ -148,23 +156,26 @@ class LocalServer(Server):
     def setup(self):
         self.py_version = sys.version_info
 
-    def run(self, command):
+    def run(self, command, wait=True):
+        out = ''
         if self.py_version < (2, 4):
             raise "must use python 2.5 or greater"
         elif self.py_version < (2, 7):
             # python 2.4-2.6
             p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
+            if wait:
+                out, err = p.communicate()
         else:
             # python 2.7 or python 3
             p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out = p.stdout.read()
+            if wait:
+                out = p.stdout.read()
         return out.rstrip()
 
     def run_bg(self, command):
         # command = "nohup " + command + " &"
-        # self.run(command)
-        os.system(command)
+        self.run(command, wait=False)
+        # os.system(command)
 
 
 class ServerState(object):
