@@ -3,13 +3,13 @@
 import datetime
 import os
 import shutil
-from context import AppContext
+from context import Context
 
 class Task(object):
-    context = AppContext()
-    SOURCE_FILE_PATH = '/net/20/kun/source/'
-    OUTPUT_FILE_PATH = '/net/20/kun/output/'
-    TASK_LOG_FILE = 'start_task.log'
+    context = Context()
+    SOURCE_FILE_PATH = context.SOURCE_FILE_PATH
+    OUTPUT_FILE_PATH = context.OUTPUT_FILE_PATH
+    TASK_LOG_FILE = context.TASK_LOG_FILE
     # state: 0: new 1:running 2:finished-OK 3:finished-Error
     STATE_NEW = 0
     STATE_RUNNIG = 1

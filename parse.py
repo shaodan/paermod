@@ -74,9 +74,9 @@ def parse_source_from_excel():
     template = '/net/20/kun/source/source'
     STK_nums = 169908
     params_weekday = np.zeros((STK_nums, 24))
-    # params_weekend = np.zeros((STK_nums, 24))
-    # params_jam = np.zeros((STK_nums, 24))
-    # params_els = np.zeros((STK_nums, 24))
+    params_weekend = np.zeros((STK_nums, 24))
+    params_jam = np.zeros((STK_nums, 24))
+    params_apec = np.zeros((STK_nums, 24))
 
 
     with open(template) as a:
@@ -90,30 +90,33 @@ def parse_source_from_excel():
             infile.readline()
             for line in infile:
                 line = line.split(',')
-                # jam = line[7:31]
+                jam = line[7:31]
                 weekday = line[31:55]
-                # weekend = line[55:79]
-                # els = line[79:103]
+                weekend = line[55:79]
+                apec = line[79:103]
                 params_weekday[i, :] = weekday
+                params_weekend[i, :] = weekend
+                params_jam[i, :] = jam
+                params_apec[i, :] = apec
                 i += 1
                 # if i > 3:
                 #     break
         # print "%.4E" % params_weekday[1,0]
         # exit()
-
-        for h in range(1, 25):
-            hh = '0'+str(h) if h < 10 else str(h)
-            with open('/net/20/kun/source/sources/source_'+p+'_'+hh, 'w') as o:
-            # with open('sources/source_'+p+'_'+hh, 'w') as o:
-                i = 0
-                for line in source_lines:
-                    if i%2==0:
-                        o.write(line)
-                    else:
-                        ol = line.split()
-                        ol[3] = "%.4E" % params_weekday[i/2, h-1]
-                        o.write(' '.join(ol)+'\n')
-                    i+= 1
+        for situation, params in [('wkd', params_weekday), ('wke', params_weekend), ('jam', params_jam), ('apec', params_apec)]:
+            for h in range(1, 25):
+                hh = '0'+str(h) if h < 10 else str(h)
+                with open('/net/20/kun/source/sources/'+situation+'/source_'+p+'_'+hh, 'w') as o:
+                # with open('sources/source_'+p+'_'+hh, 'w') as o:
+                    i = 0
+                    for line in source_lines:
+                        if i%2==0:
+                            o.write(line)
+                        else:
+                            ol = line.split()
+                            ol[3] = "%.4E" % params[i/2, h-1]
+                            o.write(' '.join(ol)+'\n')
+                        i+= 1
 
     for p in pollutants:
         parse_source_p(p)
@@ -154,7 +157,7 @@ def parse_source():
                     i+= 1
 
 
-parse_inp()
+#parse_inp()
 # parse_houremis()
 # parse_source()
-# parse_source_from_excel()
+parse_source_from_excel()

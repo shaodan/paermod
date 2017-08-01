@@ -8,11 +8,11 @@ import os
 import paramiko
 import shutil
 from task import Task
-from context import AppContext
+from context import Context
 
 
 class Server(object):
-    context = AppContext()
+    context = Context()
     def __init__(self, host, workspace=None):
         self.local = (host == '')
         self.host = host if not self.local else 'sheet20'

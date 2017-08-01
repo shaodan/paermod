@@ -4,12 +4,12 @@ import sqlite3
 from pymongo import MongoClient
 from task import Task
 from server import Server, LocalServer
-from context import AppContext
+from context import Context
 
 class DB(object):
 
     def __init__(self):
-        self.context = AppContext()
+        self.context = Context()
         self.db = None
         self.servers = None
         self.server_table = None
@@ -30,7 +30,17 @@ class DB(object):
         #for task in self.context.waiting:
         #    task.check_finished()
         #self.context.waiting = filter(lambda t:t.state==Task.STATE_NEW, self.context.waiting)
+        
+    def get_finished_tasks():
+        outputs = os.listdir(Task.OUTPUT_FILE_PATH)
 
+    def get_runnig_tasks():
+        tasks = []
+        for server in get_server_table().values():
+            tasks.extend(server.state.running_tasks)
+        return tasks
+
+        
 class DBMongo(DB):
 
     def fetch_data(self):
@@ -91,23 +101,13 @@ class DBMockup(DB):
         self.task_table = {task.name: task for task in self.tasks}
 
 
-def get_finished_tasks():
-    outputs = os.listdir(Task.OUTPUT_FILE_PATH)
-
-def get_runnig_tasks():
-    tasks = []
-    for server in get_server_table().values():
-        tasks.extend(server.state.running_tasks)
-    return tasks
-
-
-
-
-class SqliteClient():
-    def __init__(self):
-        self.conn = sqlite3.connect(AppContext().SQLITE3_DB)
-        self.cursor = self.conn.cursor()
-
+class DBSqlite(DB):
+    
+    def fetch_data(self):
+        if not self.db:
+            self.conn = sqlite3.connect(self.context.SQLITE3_DB)
+            self.cursor = self.conn.cursor()
+        
     def __del__(self):
         self.cursor.close()
         self.conn.close()

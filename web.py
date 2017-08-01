@@ -3,12 +3,14 @@
 import SimpleHTTPServer
 import SocketServer
 import BaseHTTPServer
+import socket
 import cgi
+import sys
 from os import curdir, sep
 import json
 from server import Server, LocalServer
 from task import Task
-from context import AppContext
+from context import Context
 from monitor import Monitor
 import data
 
@@ -22,7 +24,7 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
     def do_GET(self):
         # print self.headers
             # print '='*10
-        context = AppContext()
+        context = Context()
         if self.path.startswith("/state"):
             output = {'data' : context.report()}
             self.jsonify(output)
@@ -46,6 +48,7 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
             params = dict(pair.split('=') for pair in params)
             print action
             print params
+            return self.ok()
             # start, kill, download, upload
             actions = {'start': self.start_task, 'kill': self.kill_task}
             if action in actions:
@@ -53,7 +56,7 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
                 func(params)
         else:
             return super(MyHandler, self).do_GET()
-    
+
     def start_task(self, args):
         task = context.get_task(args['task'])
         server = context.get_server(args['server'])
@@ -70,9 +73,9 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
     def route(self):
         return {
             '/servers'      : self.get_servers,
-            '/server/{host}': self.get_server,
+            '/server/{host}': self.get_server_by_host,
             '/tasks'        : self.get_tasks,
-            '/task/{name}'  : self.get_task,
+            '/task/{name}'  : self.get_task_by_name,
             '/'             : None,
         }[self.path](args)
 
@@ -91,18 +94,37 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
 
     def error(self, err_code, message=None):
         self.send_error(err_code, message)
+        
+    # def log_message(self, format, *args):
+    #     sys.stderr.write("%s - - [%s] %s\n" %
+    #                  (self.address_string(),
+    #                   self.log_date_time_string(),
+    #                   format%args))
+        
+    def log_request(self, code='-', size='-'):
+        # quite request log
+        return
+        self.log_message('"%s" %s %s', self.requestline, str(code), str(size))
+
+    # def log_error(self, format, *args):
+    #     self.log_message(format, *args)
 
 
 class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     """Handle requests in a separate thread."""
+    allow_reuse_address = True
+
+    def server_bind(self):
+         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+         self.socket.bind(self.server_address)
 
 
 class WebServer(object):
-    def __init__(self, port):
+    def __init__(self, port=8000):
         self.port = port
         self.httpd = ThreadedHTTPServer(("", port), MyHandler)
         data.DBMongo()
-        self.context = AppContext()
+        self.context = Context()
         self.m = Monitor()
         self.m.start()
 
@@ -112,8 +134,11 @@ class WebServer(object):
             self.httpd.serve_forever()
         except KeyboardInterrupt:
             print '^C received, shutting down the web server'
-            self.httpd.socket.close()
-            self.m.stop = True
+            self.stop()
+     
+    def stop(self):
+        self.httpd.socket.close()
+        self.m.stop()
 
 
 class StaticHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -202,5 +227,5 @@ class JSONRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_response(500)
 
 if __name__ == '__main__':
-    web_server = WebServer(3000)
+    web_server = WebServer(3003)
     web_server.start()

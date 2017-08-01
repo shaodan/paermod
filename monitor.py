@@ -8,18 +8,18 @@ import time
 from datetime import datetime
 from server import Server, LocalServer
 from task import Task
-from context import AppContext
+from context import Context
 import data
 
 
 class Monitor(threading.Thread):
-    def __init__(self, interval=30, log=False, stop=False):
+    def __init__(self, interval=30, log=False, keep_alive=True):
         super(Monitor, self).__init__(name='Monitor Thread')
-        self.context = AppContext()
+        self.context = Context()
         self.servers = self.context.servers
         self.interval = interval
         self.log = log
-        self.stop = stop
+        self.keep_alive = keep_alive
         self.lock = threading.Lock()
 
     def handler(self, s):
@@ -31,6 +31,9 @@ class Monitor(threading.Thread):
         # self.lock.acquire()
         # self.context.running.extend(s.state.running)
         # self.lock.release()
+        
+    def stop(self):
+        self.keep_alive = False
 
     def run(self):
         # self.log = True
@@ -48,15 +51,17 @@ class Monitor(threading.Thread):
             #     self.handler(s)
             self.pool.map(self.handler, self.servers)
             for i in xrange(5):
-                if self.stop:
+                if not self.keep_alive:
+                    print 'monitor stoping...'
                     self.pool.close()
                     self.pool.join()
+                    print 'monitor stoped!'
                     return
                 time.sleep(self.interval/5)
-            print 'Waiting List: ', [w.name for w in self.context.waiting]
             self.context.running = []
             for s in self.context.servers:
                 self.context.running.extend(s.state.running)
+            print 'Waiting Tasks: ', len(self.context.waiting)#[w.name for w in self.context.waiting]
             print 'Running Tasks: ', len(self.context.running)
             self.task_queue()
 
@@ -80,7 +85,7 @@ class Monitor(threading.Thread):
             if total_free == 0:
                 print "No free Server, Keep waiting..."
                 break
-            # todo: 123
+            # todo: task固定server，减少文件拷贝
             if False and t.server:
                 s = t.server
                 if s.host in free and free[s.host] > 0:
@@ -101,7 +106,7 @@ class Monitor(threading.Thread):
 
 
 if __name__ == '__main__':
-    context = AppContext()
+    context = Context()
     if len(sys.argv) == 1:
         context.servers = [LocalServer()]
     elif sys.argv[1] == 'all':
@@ -112,14 +117,14 @@ if __name__ == '__main__':
         context.servers = [Server(sys.argv[1])]
 
     # case 1
-    Monitor(log=True, stop=True).handler(context.servers[0])
+    Monitor(log=True, keep_alive=False).handler(context.servers[0])
 
     # case 2
-    #Monitor(log=True, stop=True).start()
+    #Monitor(log=True, keep_alive=False).start()
 
     # case 3
     # m = Monitor(context, log=True)
     # m.start()
     # signal = raw_input()
     # if signal == 'q':
-    #     m.stop = True
+    #     m.keep_alive = False

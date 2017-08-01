@@ -10,7 +10,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class AppContext():
+class Context():
     __metaclass__ = Singleton
 
     def __init__(self, ):
@@ -27,7 +27,7 @@ class AppContext():
 
         # server config
         self.Master = 'sheet20'
-        self.MAX_TASK_PER_SERVER = 12
+        self.MAX_TASK_PER_SERVER = 10
         self.MAX_CPU = 50
         self.MONITOR_INTERVAL = 30
         # task config
@@ -93,6 +93,6 @@ class AppContext():
             return datetime.datetime.strptime(timestr, '%a %b %d %H:%M:%S %Z %Y')
 
 if __name__ == '__main__':
-    context = AppContext()
+    context = Context()
     print context.servers
 
