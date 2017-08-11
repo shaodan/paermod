@@ -5,11 +5,9 @@ import os
 import shutil
 from context import Context
 
+context = Context()
+
 class Task(object):
-    context = Context()
-    SOURCE_FILE_PATH = context.SOURCE_FILE_PATH
-    OUTPUT_FILE_PATH = context.OUTPUT_FILE_PATH
-    TASK_LOG_FILE = context.TASK_LOG_FILE
     # state: 0: new 1:running 2:finished-OK 3:finished-Error
     STATE_NEW = 0
     STATE_RUNNIG = 1
@@ -18,11 +16,15 @@ class Task(object):
     STATE_STOP = 4
     state_str = ['Waiting', 'Running', 'OK', 'Error', 'Stopped']
 
-    def __init__(self, pollutant, date, hour):
+    def __init__(self, pollutant, date, hour, situation=''):
         self.pollutant = pollutant
         self.date = date
         self.hour = '0'+str(hour) if hour < 10 else str(hour)
-        self.name = "%s_%s_%s" % (self.pollutant, self.date, self.hour)
+        self.situation = situation
+        if situation:
+            self.name = "%s_%s_%s_%s" % (self.pollutant, self.date, self.hour, self.situation)
+        else:
+            self.name = "%s_%s_%s" % (self.pollutant, self.date, self.hour)
         self.server = None
         self.path = ''
         self.pid = 0
@@ -42,7 +44,7 @@ class Task(object):
         self.prepare()
         #return self
         run_command = "cd %s && nohup ./run.sh > run.log &" % self.path
-        print run_command
+        # print run_command
         output = self.server.run_bg(run_command)
         self.start_time = datetime.datetime.now()
         self.state = Task.STATE_RUNNIG
@@ -62,33 +64,28 @@ class Task(object):
             # shutil.copy2(os.getcwd()+"/run.sh", self.path)
             return
         os.mkdir(self.path)
-        for f in self.get_common_files():
-            shutil.copy2(f, self.path)
-        shutil.copy2(self.get_inp(), self.path+"/aermod.inp")
-        for mp in self.get_MP():
-            shutil.copy2(mp, self.path)
-        shutil.copy2(self.get_source(), self.path+"/source")
-        # shutil.copy2(self.get_HOUREMIS(), self.path+"/HOUREMIS")
-        shutil.copy2(os.getcwd()+"/run.sh", self.path)
+        self.copy_run_files()
 
     def change_state(self, new_state):
         if self.state == new_state:
             return
         self.state = new_state
-        self.context.db.update({'name': self.name}, {'$set': {'state':self.state}})
+        context.db.update({'name': self.name}, {'$set': {'state':self.state}})
 
     def save(self):
-        self.context.db.db.tasks.update({'name': self.name},
-                                        {'$set': {'state'   : self.state,
-                                                  'start_at': self.start_time,
-                                                  'end_at'  : self.end_time,
-                                                  'server'  : self.server.host if self.server else ''}
-                                        })
+        context.db.db.tasks.update({'name': self.name },
+                                   {'$set': {'state'   : self.state,
+                                             'start_at': self.start_time,
+                                             'end_at'  : self.end_time,
+                                             'server'  : self.server.host if self.server else ''
+                                            },
+                                   }, upsert=True
+                                  )
 
     def check_finished(self):
         if self.state==Task.STATE_ERROR or self.state==Task.STATE_OK:
             return
-        logfile = self.context.OUTPUT_FILE_PATH+self.name+'.log'
+        logfile = context.OUTPUT_FILE_PATH+self.name+'.log'
         if not os.path.exists(logfile):
             return
         has_error = False
@@ -97,9 +94,9 @@ class Task(object):
         with open(logfile, 'r') as log:
             for line in log:
                 if line.endswith('start!\n'):
-                    start_time = self.context.parse_time(line[:-10])
+                    start_time = context.parse_time(line[:-10])
                 elif line.endswith('end!\n'):
-                    end_time = self.context.parse_time(line[:-8])
+                    end_time = context.parse_time(line[:-8])
                 elif line.lower().find('error')>0:
                     has_error = True
         if has_error:
@@ -127,67 +124,58 @@ class Task(object):
         }
 
     def copy_run_files(self):
-        source_files = {
-            'aermod' : 'aermod',
-            'aermod.inp/{BC_0103_01}.inp': 'aermod.inp',
-            'source' : 'source',
-            'receptor' : 'receptor',
-            'MP/{0103}/MP.PFL' : 'MP.PFL',
-            'MP/{0103}/MP.SFC' : 'MP.SFC',
-            'HOUREMIS/{BC_0103}' : 'HOUREMIS'
-        }
-        source_files2 = {
-            'aermod' : 'aermod',
-            '{BC_0103_01}/aermod.inp': 'aermod.inp',
-            'source' : 'source',
-            'receptor' : 'receptor',
-            'MP/{0103}/MP.PFL' : 'MP.PFL',
-            'MP/{0103}/MP.SFC' : 'MP.SFC',
-            '{}/HOUREMIS' : 'HOUREMIS'
-        }
-        sources = []
-        targets = []
-        for source in os.listdir(Task.SOURCE_FILE_PATH):
-            if os.path.isfile(Task.SOURCE_FILE_PATH+source):
-                sources
-            if os.path.isdir(Task.SOURCE_FILE_PATH+source):
-                pass
+        run_files = [
+            ('aermod'     , 'aermod'),
+            ('receptor'   , 'receptor'),
+            ('aermod.inp' , 'inps/{pollutant}_{date}_{hour}.inp'),
+            ('source'     , 'sources/{pollutant}_{hour}_{situation}'),
+            ('MP.PFL'     , 'MPs/13{date}/MP.PFL'),
+            ('MP.SFC'     , 'MPs/13{date}/MP.SFC'),
+            # ('HOUREMIS'   , 'HOUREMIS/{BC_0103}')
+        ]
+        for t, s in run_files:
+            s = context.SOURCE_FILE_PATH + s
+            target = '%s/%s' % (self.path, t)
+            source = s.format(**vars(self))
+            # py2 doesn't support string.format_map
+            # source = s.format_map(vars(self))
+            # print 'copying from %s to %s' % (source, target)
+            shutil.copy2(source, target)
+        shutil.copy2(os.getcwd()+"/run.sh", self.path)
 
     def copy_output_files(self):
-        output_files = [('/run.log', '.log'), ('/ERRORS.OUT', '.error'), ('/aermod.out', '.out')]
+        output_files = [
+            ('aermod.out', '.out'),
+            ('ERRORS.OUT', '.err'),
+            ('run.log', '.log'),
+        ]
         for s, t in output_files:
-            source = self.path + s
-            target = Task.OUTPUT_FILE_PATH + self.name + t
+            source = '%s/%s'  % (self.path, s)
+            target = '%s%s%s' % (context.OUTPUT_FILE_PATH, self.name, t)
             # todo: prevent file duplicated copy
             if os.path.exists(source): #and not os.path.exists(target):
                 shutil.copy2(source, target)
 
-    def get_common_files(self):
-        files = map(lambda f: Task.SOURCE_FILE_PATH+f, ["aermod", "receptor"])
-        return files
-
-    def get_inp(self):
-        # inp = "%sinps/Linerun_%s_%s/aermod_%s.inp" % (Task.SOURCE_FILE_PATH, self.pollutant, self.date, self.hour)
-        inp = "%sinps/aermod_%s_%s_%s.inp" % (Task.SOURCE_FILE_PATH, self.pollutant, self.date, self.hour)
-        return inp
-
-    def get_MP(self):
-        pfl = Task.SOURCE_FILE_PATH+"MPs/13"+self.date+"/MP.PFL"
-        sfc = Task.SOURCE_FILE_PATH+"MPs/13"+self.date+"/MP.SFC"
-        return [pfl, sfc]
-
-    def get_source(self):
-        return "%ssources/source_%s_%s" % (Task.SOURCE_FILE_PATH, self.pollutant, self.hour)
-
     def get_HOUREMIS(self):
         # todo NO2 -> NOX
         pollutant = self.pollutant if self.pollutant != "NO2" else "NOX"
-        HOUREMIS = "%sHOUREMIS/HOUREMIS_%s_%s" % (Task.SOURCE_FILE_PATH, pollutant, self.date)
+        HOUREMIS = "%sHOUREMIS/HOUREMIS_%s_%s" % (context.SOURCE_FILE_PATH, pollutant, self.date)
         return HOUREMIS
 
+    
+class TaskFactory(object):
+    
+    def createTask(self, t):
+        if isinstance(t, dict):
+            pollutant = t
+        else:
+            pollutant, date, hour, situation = 1,2,3,4
+        task = Task()
+        return task
 
+    
 if __name__ == '__main__':
-    t = Task("BC", "0403", "09")
-    print t.get_inp()
-    print t.get_MP()
-    print t.get_HOUREMIS()
+    t = Task("BC", "0403", 9)
+    # print t.get_inp()
+    # print t.get_MP()
+    # print t.get_HOUREMIS()

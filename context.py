@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import datetime
+import socket
+
 
 class Singleton(type):
     _instances = {}
@@ -14,10 +16,10 @@ class Context():
     __metaclass__ = Singleton
 
     def __init__(self, ):
+        # data
         self.db = None
         self.servers = None
         self.tasks = None
-
         self.server_table = None
         self.task_table = None
 
@@ -25,21 +27,25 @@ class Context():
         self.running = None
         self.waiting = None
 
-        # server config
-        self.Master = 'sheet20'
-        self.MAX_TASK_PER_SERVER = 10
-        self.MAX_CPU = 50
-        self.MONITOR_INTERVAL = 30
-        # task config
-        self.SOURCE_FILE_PATH = '/net/20/kun/source/'
-        self.OUTPUT_FILE_PATH = '/net/20/kun/output/'
-        self.TASK_LOG_FILE = 'start_task.log'
-        self.RUN_LOG = 'run.log'
-        self.OUTPUT_TO_DIR = False
-        self.OUTPUT_FILES = [('aermod.out', '%s.out'), ('ERRORS.OUT', '%s.error'), ('run.log', '%s.log')]
         # db config
         self.SQLITE3_DB = 'sqlite3.db'
         self.MONGO_DB = 'localhost:27017'
+        
+        # server config
+        self.Master = socket.gethostname()
+        self.MAX_TASK_PER_SERVER = 10
+        self.MAX_CPU = 50
+        self.MONITOR_INTERVAL = 30
+        self.USER = 'kun'
+        self.PASSWORD = 'wpw2016'
+        
+        # task config
+        self.SOURCE_FILE_PATH = '/net/20/kun/source/'
+        self.OUTPUT_FILE_PATH = '/net/20/kun/output/'
+        # self.TASK_LOG_FILE = 'start_task.log'
+        self.RUN_LOG = 'run.log'
+        self.OUTPUT_TO_DIR = False
+        self.OUTPUT_FILES = [('aermod.out', '.out'), ('ERRORS.OUT', '.error'), ('run.log', '.log')]
 
     def report(self):
         return {

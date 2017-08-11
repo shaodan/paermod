@@ -106,8 +106,8 @@ def parse_source_from_excel():
         for situation, params in [('wkd', params_weekday), ('wke', params_weekend), ('jam', params_jam), ('apec', params_apec)]:
             for h in range(1, 25):
                 hh = '0'+str(h) if h < 10 else str(h)
-                with open('/net/20/kun/source/sources/'+situation+'/source_'+p+'_'+hh, 'w') as o:
-                # with open('sources/source_'+p+'_'+hh, 'w') as o:
+                source_file = '/net/20/kun/source/sources/%s_%s_%s' % (p, hh, situation)
+                with open(source_file, 'w') as o:
                     i = 0
                     for line in source_lines:
                         if i%2==0:

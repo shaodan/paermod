@@ -11,33 +11,27 @@ from task import Task
 from context import Context
 
 
+context = Context()
+
 class Server(object):
-    context = Context()
-    def __init__(self, host, workspace=None):
-        self.local = (host == '')
-        self.host = host if not self.local else 'sheet20'
+    
+    def __init__(self, host, workspace=None, weight=1):
+        self.host = host
         self.workspace = workspace
-        self.available = False
+        self.weight = weight
+        self.available = True
         self._ssh = None
         self.setup()
         self.tasks = {}
         self.state = ServerState(self)
-        self.weight = {
-            'sheet20' : 3,
-            'sheet21' : 3,
-            'sheet16' : 1,
-            'sheet17' : 1,
-            'sheet18' : 1,
-            'sheet19' : 1,
-        }[self.host]
-
+        self.updated = False
 
     def setup(self):
         # establish ssh connection
-        if not self.local:
-            self.connect()
+        self.connect()
         # check work dir
         if self.workspace is None:
+            print 'server %s does NOT have workspace' % self.host
             return
         try:
             if not os.path.isdir(self.workspace):
@@ -55,11 +49,12 @@ class Server(object):
             self._ssh.connect(self.host)
             self.available = True
         except Exception as e:
+            self.available = False
             print(self.host + " connecting fail...")
             print(e.message)
 
     def is_connected(self):
-        transport = self._ssh.get_transport() if self._ssh else None
+        transport = self._ssh.get_transport() if self._ssh else False
         return transport and transport.is_active()
 
     def clean(self):
@@ -68,12 +63,12 @@ class Server(object):
         dirs = os.listdir(self.workspace)
         running_tasks = set([t.name for t in self.state.running])
         for task_name in dirs:
-            task = self.context.get_task(task_name)
+            task = context.get_task(task_name)
             if task:
                 if task_name not in running_tasks:
                     task.clean()
             else:
-                print 'clean : ' + self.workspace + task_name
+                print 'clean task : %s%s' % (self.workspace, task_name)
                 shutil.rmtree(self.workspace+task_name)
 
     def shutdown(self):
@@ -84,7 +79,7 @@ class Server(object):
         self.state.update()
         # for task_name in self.state.running:
         #     pass
-        # self.context.get_task(task_name).register(self) for task_name in self.state.state.running
+        # context.get_task(task_name).register(self) for task_name in self.state.state.running
 
     def report(self, with_task=False):
         state = self.state.to_json()
@@ -100,7 +95,7 @@ class Server(object):
     def copy(self, source, target):
         if not os.path.exists(source) or os.path.exists(target):
             return False
-        if self.local:
+        if self.is_remote_dir(target):
             # NFS copy
             shutil.copy2(source, target)
         else:
@@ -110,6 +105,9 @@ class Server(object):
         # todo: check copy sucess
         if state:
             raise IOError('copy file error')
+            
+    def is_remote_dir(self, path):
+        return path.find(':') > 0
 
     def run(self, command):
         if not self.is_connected():
@@ -148,13 +146,15 @@ class Server(object):
         # f.read()
         # f.close()
 
+        
 class LocalServer(Server):
 
-    def __init__(self, workspace=None):
-        super(LocalServer, self).__init__('', workspace)
-
-    def setup(self):
+    def __init__(self, host, workspace=None, weight=1):
+        super(LocalServer, self).__init__(host, workspace, weight)
         self.py_version = sys.version_info
+
+    def connect(self):
+        pass
 
     def run(self, command, wait=True):
         out = ''
@@ -167,7 +167,7 @@ class LocalServer(Server):
                 out, err = p.communicate()
         else:
             # python 2.7 or python 3
-            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
             if wait:
                 out = p.stdout.read()
         return out.rstrip()
@@ -176,6 +176,20 @@ class LocalServer(Server):
         # command = "nohup " + command + " &"
         self.run(command, wait=False)
         # os.system(command)
+        
+        
+class ServerFactory(object):
+    
+    def createServer(self, c):
+        if isinstance(c, dict):
+            host = c['host'].encode()
+            workspace = c['workspace'].encode()
+            weight = c['weight']
+        elif isinstance(c, tuple):
+            host, workspace, weight = c
+        if host == context.Master:
+            return LocalServer(host, workspace, weight)
+        return Server(host, workspace, weight)
 
 
 class ServerState(object):
@@ -208,7 +222,7 @@ class ServerState(object):
         if self.last_update is None:
             results = self.server.run_batch(ServerState.core_command, ServerState.time_command)
             self.cores = int(results[0])
-            local_time = self.server.context.parse_time(results[1])
+            local_time = context.parse_time(results[1])
             self.time_delta = master_time - local_time
         self.last_update = master_time
         results = self.server.run_batch(ServerState.cpu_command, ServerState.pwdx_command)
@@ -223,8 +237,9 @@ class ServerState(object):
         self.running = []
         for pwdx in results[1:]:
             pid, path = pwdx.split(':')
-            task_name = path[-10:]
-            task = self.server.context.get_task(task_name)
+            # task_name = path[-10:]
+            task_name = path.split('/')[-1]
+            task = context.get_task(task_name)
             self.running.append(task)
 
             if task.state==Task.STATE_NEW: # or task.server != self.server:
@@ -243,8 +258,6 @@ class ServerState(object):
             # day, hms = psid[-1].split('-')
             # h,m,s=hms.split(':')
             # task.run_time = datetime.timedelta(days=int(day), hours=int(h), minutes=int(m), seconds=int(s))
-
-
 
     def to_json(self):
         if not self.last_update:

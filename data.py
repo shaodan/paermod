@@ -3,13 +3,17 @@
 import sqlite3
 from pymongo import MongoClient
 from task import Task
-from server import Server, LocalServer
+from server import ServerFactory
 from context import Context
+
+
+context = Context()
+sf = ServerFactory()
+
 
 class DB(object):
 
     def __init__(self):
-        self.context = Context()
         self.db = None
         self.servers = None
         self.server_table = None
@@ -19,17 +23,20 @@ class DB(object):
 
     def load_data(self):
         self.fetch_data()
-        self.context.db = self
-        self.context.servers = self.servers
-        self.context.tasks = self.tasks
-        self.context.server_table = self.server_table
-        self.context.task_table = self.task_table
+        context.db = self
+        context.servers = self.servers
+        context.tasks = self.tasks
+        context.server_table = self.server_table
+        context.task_table = self.task_table
 
-        self.context.waiting = filter(lambda t:t.state==Task.STATE_NEW, self.context.tasks)
+        context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.tasks)
         # 一开始的task没有记录state，需要检查output下面的log进行判断
-        #for task in self.context.waiting:
-        #    task.check_finished()
-        #self.context.waiting = filter(lambda t:t.state==Task.STATE_NEW, self.context.waiting)
+        # for task in context.waiting:
+        #     task.check_finished()
+        # context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.waiting)
+        
+    def fetch_data(self):
+        raise NotImplementedError("Class DB is NOT instanceable!")
         
     def get_finished_tasks():
         outputs = os.listdir(Task.OUTPUT_FILE_PATH)
@@ -48,29 +55,26 @@ class DBMongo(DB):
             client = MongoClient('localhost', 27017)
             self.db = client['aermod']
         server_list = []
-        for s in self.db['servers'].find():
-            host = s['host'].encode()
-            workspace = s['workspace'].encode()
-            if host == self.context.Master:
-                new_server = LocalServer(workspace)
-            else:
-                new_server = Server(host, workspace)
-            # new_server.weight = s['weight']
+        for s in self.db.servers.find():
+            # host = s['host'].encode()
+            # workspace = s['workspace'].encode()
+            # weight = s['weight']
+            new_server = sf.createServer(s)
             server_list.append(new_server)
         self.servers = server_list
         self.server_table = {server.host: server for server in server_list}
 
         task_list = []
-        for t in self.db['tasks'].find():
+        for t in self.db.tasks.find():
             name = t['name'].encode()
-            if name.startswith('NO'):
+            if name.startswith('NO') or name.startswith('CO'):
                 continue
             server = t['server'].encode()
             start_time = t['start_at']
             end_time = t['end_at']
             state = t['state']
-            p, d, h = name.split('_')
-            task = Task(p, d, int(h))
+            p, d, h, s = (name.split('_') + [''])[0:4]
+            task = Task(p, d, int(h), s)
             task.state = state
             task.start_time = start_time if start_time else None
             task.end_time = end_time if end_time else None
@@ -80,24 +84,25 @@ class DBMongo(DB):
 
         self.tasks = task_list
         self.task_table = {task.name: task for task in task_list}
+    
+
 
 
 class DBMockup(DB):
 
     def fetch_data(self):
-        master = 'sheet20'
-        user = 'kun'
-        password = 'wpw2016'
-        master_disk = '/net/20/kun/AERMOD/'
-        slavers = ['sheet16', 'sheet17', 'sheet18', 'sheet19', 'sheet21']
-        disks = ['/net/12', '/net/17', '/net/18', '/net/19', '/net/21_2']
-        spaces = [d+"/kun/" for d in disks]
+        hosts = ['sheet20', 'sheet16', 'sheet17', 'sheet18', 'sheet19', 'sheet21']
+        spaces = ['/net/20/kun/AERMOD/', '/net/12/kun/', '/net/17/kun/', '/net/18/kun/', '/net/19/kun/', '/net/21_2/kun/']
+        weights = [3, 1, 1, 1, 1, 3]
         pollutants = ["BC", "CO", "NO2", "PM"]
         dates = ["0103", "0403", "0703", "1003"]
+        situations = ['wkd', 'wke', 'apec', 'jam']
+        situations = situations[1:]
         hours = range(1, 25)
-        self.servers = [LocalServer(master_disk)] + [Server(h, d) for h, d in zip(slavers, spaces)]
+        self.servers = [sf.createServer(t) for t in zip(hosts, spaces, weights)]
         self.server_table = {server.host: server for server in self.servers}
-        self.tasks  = [Task(p, d, h) for p in pollutants for d in dates for h in hours]
+        # self.tasks  = [Task(p, d, h) for p in pollutants for d in dates for h in hours]
+        self.tasks = [Task(p, d, h, s) for p in pollutants for d in dates for h in hours for s in situations]
         self.task_table = {task.name: task for task in self.tasks}
 
 
@@ -105,7 +110,7 @@ class DBSqlite(DB):
     
     def fetch_data(self):
         if not self.db:
-            self.conn = sqlite3.connect(self.context.SQLITE3_DB)
+            self.conn = sqlite3.connect(context.SQLITE3_DB)
             self.cursor = self.conn.cursor()
         
     def __del__(self):
@@ -123,6 +128,10 @@ class DBSqlite(DB):
 if __name__ == '__main__':
     # insert_servers()
     # insert_tasks()
-    d = DB()
-    # d.fetch_from_mockup()
+    # d = DB()
+    dbm = DBMockup()
+    dbg = DBMongo()
+    for t in dbm.tasks:
+        # print t.name
+        t.save()
 

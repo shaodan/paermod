@@ -8,9 +8,6 @@ import data
 import web
 
 
-def monitor():
-    pass
-
 def web_server():
     PORT = 8000
     web_server = web.WebServer(PORT)

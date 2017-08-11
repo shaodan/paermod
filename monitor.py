@@ -12,11 +12,13 @@ from context import Context
 import data
 
 
+context = Context()
+
+
 class Monitor(threading.Thread):
     def __init__(self, interval=30, log=False, keep_alive=True):
         super(Monitor, self).__init__(name='Monitor Thread')
-        self.context = Context()
-        self.servers = self.context.servers
+        self.servers = context.servers
         self.interval = interval
         self.log = log
         self.keep_alive = keep_alive
@@ -29,7 +31,7 @@ class Monitor(threading.Thread):
             print map(lambda t:t.name, s.state.running)
         s.clean()
         # self.lock.acquire()
-        # self.context.running.extend(s.state.running)
+        # context.running.extend(s.state.running)
         # self.lock.release()
         
     def stop(self):
@@ -37,7 +39,7 @@ class Monitor(threading.Thread):
 
     def run(self):
         # self.log = True
-        # for s in self.servers[]:
+        # for s in self.servers:
         #     self.handler(s)
         # return
         ## asynchronization
@@ -58,30 +60,30 @@ class Monitor(threading.Thread):
                     print 'monitor stoped!'
                     return
                 time.sleep(self.interval/5)
-            self.context.running = []
-            for s in self.context.servers:
-                self.context.running.extend(s.state.running)
-            print 'Waiting Tasks: ', len(self.context.waiting)#[w.name for w in self.context.waiting]
-            print 'Running Tasks: ', len(self.context.running)
+            context.running = []
+            for s in context.servers:
+                context.running.extend(s.state.running)
+            print 'Waiting Tasks: ', len(context.waiting)
+            print 'Running Tasks: ', len(context.running)
             self.task_queue()
 
     def task_queue(self):
-        if not len(self.context.waiting):
+        if not len(context.waiting):
             return
         free = {}
         total_free = 0
         for s in self.servers:
-            free_core = int(s.state.cores*(self.context.MAX_CPU - s.state.cpu)/100.0)
-            free_task = self.context.MAX_TASK_PER_SERVER - len(s.state.running)
+            free_core = int(s.state.cores*(context.MAX_CPU - s.state.cpu)/100.0)
+            free_task = context.MAX_TASK_PER_SERVER - len(s.state.running)
             free_min = min(free_task, free_core)
             if free_min > 0:
                 free[s.host] = free_min * s.weight
                 total_free += free_min
-            #for t in self.context.pop_task(free_min):
+            #for t in context.pop_task(free_min):
                 #print "Start Task %s on %s" % (t.name, s.host)
                 #t.register(s).start()
         # total_free = sum(free.values())
-        for t in self.context.waiting:
+        for t in context.waiting:
             if total_free == 0:
                 print "No free Server, Keep waiting..."
                 break
@@ -97,16 +99,15 @@ class Monitor(threading.Thread):
                     print " Task %s is waiting for Server %s" % (s.host, t.name)
             else:
                 s = max(free, key=free.get)
-                s = self.context.get_server(s)
+                s = context.get_server(s)
                 print "Start Task %s on %s" % (t.name, s.host)
                 t.register(s).start()
                 total_free -= 1
                 free[s.host] -= s.weight
-        self.context.waiting = filter(lambda t:t.state==Task.STATE_NEW, self.context.waiting)
+        context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.waiting)
 
 
 if __name__ == '__main__':
-    context = Context()
     if len(sys.argv) == 1:
         context.servers = [LocalServer()]
     elif sys.argv[1] == 'all':
