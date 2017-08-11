@@ -7,7 +7,7 @@ import numpy as np
 
 source_pollutant = "/net/20/kun/source/HOUREMIS/HOUREMIS_"
 source_inp = "/net/20/kun/source/inps_old/Linerun_"
-target_inp = "/net/20/kun/source/inps/"
+target_inp = "/net/20/kun/source/inps"
 
 
 NO2 = {
@@ -27,7 +27,7 @@ def parse_inp():
             for hour in hours:
                 hour = '0'+str(hour) if hour < 10 else str(hour)
                 in_file = "%s%s_%s/aermod_%s.inp" % (source_inp, p, date, hour)
-                out_file = "%saermod_%s_%s_%s.inp" % (target_inp, p, date, hour)
+                out_file = "%s/%s_%s_%s.inp" % (target_inp, p, date, hour)
                 with open(in_file, 'r') as inp:
                     out = open(out_file, 'w')
                     for line in inp:
