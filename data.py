@@ -15,6 +15,7 @@ class DB(object):
 
     def __init__(self):
         self.db = None
+        self.context = context
         self.servers = None
         self.server_table = None
         self.tasks = None
@@ -72,7 +73,7 @@ class DBMongo(DB):
             server = t['server'].encode()
             start_time = t['start_at']
             end_time = t['end_at']
-            state = t['state']
+            state = int(t['state'])
             p, d, h, s = (name.split('_') + [''])[0:4]
             task = Task(p, d, int(h), s)
             task.state = state

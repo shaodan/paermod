@@ -82,6 +82,7 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
     def jsonify(self, ouput):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.wfile.write("\r\n")
         output = json.dumps(ouput, indent=4)
         self.wfile.write(output)
