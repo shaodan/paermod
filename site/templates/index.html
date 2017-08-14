@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+{% set active_page = "index" %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1>
+        Dashboard
+        <small>Control panel</small>
+      </h1>
+      <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+      </ol>
+    </section>
+    <!-- Main content -->
+    <section class="content" id="app">
+      <!-- Info boxes -->
+      <div class="row">
+        <div class="col-md-3 col-sm-6 col-xs-12">
+          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
+            <span class="info-box-icon bg-aqua"><i class="ion ion-monitor"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Servers</span>
+              <span class="info-box-number">{{ "{{server}}" }}</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+          <div class="info-box click" onclick="javascript:location.href='tasks.html'" role="button">
+            <span class="info-box-icon bg-yellow"><i class="ion ion-flash"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Running</span>
+              <span class="info-box-number">{{ "{{running}}" }}</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+        <!-- fix for small devices only -->
+        <div class="clearfix visible-sm-block"></div>
+        <div class="col-md-3 col-sm-6 col-xs-12">
+          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
+            <span class="info-box-icon bg-green"><i class="ion ion-checkmark-circled"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Finished</span>
+              <span class="info-box-number">{{ "{{finished}}" }}</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
+            <span class="info-box-icon bg-red"><i class="ion ion-alert-circled"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Error</span>
+              <span class="info-box-number">{{ "{{error}}" }}</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <!-- /.col -->
+      </div>
+      <!-- /.row -->
+    </section>
+    <!-- /.content -->
+{% endblock %}
+{% block script %}
+<!-- vue.js -->
+<!-- <script src="https://unpkg.com/vue/dist/vue.js"></script> -->
+<script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+
+<!-- page script -->
+<script type="text/javascript">
+  var app = new Vue({
+    el: '#app',
+    data : {
+      server: 0,
+      running: 0,
+      finished: 0,
+      error: 0
+    },
+    mounted: function() {
+        this.get_state();
+    },
+    methods: {
+      get_state: function() {
+          var self = this;
+          $.ajax({ url: "state", dataType: "json", method: 'GET',
+                  success: function(data) {
+                      self.server = data.data.server_count;
+                      self.total = data.data.task_total;
+                      self.running = data.data.task_running;
+                      self.waiting = data.data.task_waiting;
+                      self.error = data.data.task_error;
+                      self.finished = self.total - self.running - self.waiting;
+                  },
+                  error: function(data){
+                      console.log("get state error!");
+                  }
+              });
+        }
+      }
+  });
+  $(document).ready(function() {
+    setInterval( function () {
+      app.get_state();
+    }, 30000 );
+  });
+</script>
+{% endblock %}

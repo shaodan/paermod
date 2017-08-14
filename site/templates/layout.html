@@ -1,24 +1,26 @@
+{% import "macros.html" as macro with context %}
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Aermod | Servers</title>
+  <title>Aermod | {{ title }}</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <!-- Bootstrap 3.3.6 -->
-  <link rel="stylesheet" href="site/static/bootstrap/css/bootstrap.min.css">
+<!--   <link rel="stylesheet" href="{{url_for("static", filename="bootstrap/css/bootstrap.min.css")}}"> -->
+  <link rel="stylesheet" href="{{macro.static_url("bootstrap/css/bootstrap.min.css")}}">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css">
   <!-- Ionicons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
   <!-- Theme style -->
-  <link rel="stylesheet" href="site/static/dist/css/AdminLTE.min.css">
+  <link rel="stylesheet" href="{{macro.static_url("dist/css/AdminLTE.min.css")}}">
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
-  <link rel="stylesheet" href="site/static/dist/css/skins/_all-skins.min.css">
+  <link rel="stylesheet" href="{{macro.static_url("dist/css/skins/_all-skins.min.css")}}">
    <!-- DataTables -->
-  <link rel="stylesheet" href="site/static/plugins/datatables/dataTables.bootstrap.css">
+  <link rel="stylesheet" href="{{macro.static_url("plugins/datatables/dataTables.bootstrap.css")}}">
 
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -61,7 +63,7 @@
                   <li><!-- start message -->
                     <a href="#">
                       <div class="pull-left">
-                        <img src="site/static/dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+                        <img src="{{macro.static_url("dist/img/user2-160x160.jpg")}}" class="img-circle" alt="User Image">
                       </div>
                       <h4>
                         Support Team
@@ -74,7 +76,7 @@
                   <li>
                     <a href="#">
                       <div class="pull-left">
-                        <img src="site/static/dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                        <img src="{{macro.static_url("dist/img/user3-128x128.jpg")}}" class="img-circle" alt="User Image">
                       </div>
                       <h4>
                         AdminLTE Design Team
@@ -86,7 +88,7 @@
                   <li>
                     <a href="#">
                       <div class="pull-left">
-                        <img src="site/static/dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                        <img src="{{macro.static_url("dist/img/user4-128x128.jpg")}}" class="img-circle" alt="User Image">
                       </div>
                       <h4>
                         Developers
@@ -98,7 +100,7 @@
                   <li>
                     <a href="#">
                       <div class="pull-left">
-                        <img src="site/static/dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                        <img src="{{macro.static_url("dist/img/user3-128x128.jpg")}}" class="img-circle" alt="User Image">
                       </div>
                       <h4>
                         Sales Department
@@ -110,7 +112,7 @@
                   <li>
                     <a href="#">
                       <div class="pull-left">
-                        <img src="site/static/dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                        <img src="{{macro.static_url("dist/img/user4-128x128.jpg")}}" class="img-circle" alt="User Image">
                       </div>
                       <h4>
                         Reviewers
@@ -243,13 +245,13 @@
           <!-- User Account: style can be found in dropdown.less -->
           <li class="dropdown user user-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              <img src="dist/img/user2-160x160.jpg" class="user-image" alt="User Image">
+              <img src="{{url_for("static", filename="dist/img/user2-160x160.jpg")}}" class="user-image" alt="User Image">
               <span class="hidden-xs">Alexander Pierce</span>
             </a>
             <ul class="dropdown-menu">
               <!-- User image -->
               <li class="user-header">
-                <img src="dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+                <img src="{{macro.static_url("dist/img/user2-160x160.jpg")}}" class="img-circle" alt="User Image">
 
                 <p>
                   Alexander Pierce - Web Developer
@@ -297,7 +299,7 @@
       <!-- Sidebar user panel -->
       <div class="user-panel">
         <div class="pull-left image">
-          <img src="dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+          <img src="{{macro.static_url("dist/img/user2-160x160.jpg")}}" class="img-circle" alt="User Image">
         </div>
         <div class="pull-left info">
           <p>Alexander Pierce</p>
@@ -326,10 +328,19 @@
             </span>
           </a>
           <ul class="treeview-menu">
-            <li><a href="index.html"><i class="fa fa-circle-o"></i> Dashboard </a></li>
-            <li class="active"><a href="servers.html"><i class="fa fa-circle-o"></i> Servers </a></li>
-            <li><a href="tasks.html"><i class="fa fa-circle-o"></i> Tasks </a></li>
-            <li><a href="config.html"><i class="fa fa-circle-o"></i> Config </a></li>
+          {%- set navigation_bar = [
+            ('index', 'index.html', 'Dashboard'),
+            ('servers', 'servers.html', 'Servers'),
+            ('tasks', 'tasks.html', 'Tasks'),
+            ('config', 'config.html', 'Config')] -%}
+          {%- set active_page = active_page|default('index') -%}
+          {%- for id, href, caption in navigation_bar -%}
+            {%- if id==active_page %}
+            <li class="active"><a href="#"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
+            {%- else %}
+            <li><a href="{{ href|e }}"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
+            {%- endif -%}
+          {% endfor %}
           </ul>
         </li>
       </ul>
@@ -339,41 +350,10 @@
 
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-      <h1>
-        运行状态
-        <small>服务器</small>
-      </h1>
-      <ol class="breadcrumb">
-        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li class="active">Dashboard</li>
-      </ol>
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
-      <!-- Small boxes (Stat box) -->
-      <div class="row">
-        <div class="col-xs-12">
-          <div class="box">
-            <div class="box-header">
-              <h3 class="box-title">服务器列表</h3>
-            </div>
-            <!-- /.box-header -->
-            <div class="box-body">
-              <table id='datatable' class="table table-bordered table-hover">
-              </table>
-            </div>
-            <!-- /.box-body -->
-          </div>
-          <!-- /.box -->
-      </div>
-
-    </section>
-    <!-- /.content -->
+  {% block content %}{% endblock %}
   </div>
   <!-- /.content-wrapper -->
+    
   <footer class="main-footer">
     <div class="pull-right hidden-xs">
       <b>Version</b> 2.3.11
@@ -401,7 +381,6 @@
 
               <div class="menu-info">
                 <h4 class="control-sidebar-subheading">Langdon's Birthday</h4>
-
                 <p>Will be 23 on April 24th</p>
               </div>
             </a>
@@ -419,7 +398,6 @@
                   <span class="label label-danger pull-right">70%</span>
                 </span>
               </h4>
-
               <div class="progress progress-xxs">
                 <div class="progress-bar progress-bar-danger" style="width: 70%"></div>
               </div>
@@ -443,7 +421,6 @@
               Report panel usage
               <input type="checkbox" class="pull-right" checked>
             </label>
-
             <p>
               Some information about this general settings option
             </p>
@@ -462,7 +439,7 @@
 <!-- ./wrapper -->
 
 <!-- jQuery 2.2.3 -->
-<script src="site/static/plugins/jQuery/jquery-2.2.3.min.js"></script>
+<script src="{{macro.static_url("plugins/jQuery/jquery-2.2.3.min.js")}}"></script>
 <!-- jQuery UI 1.11.4 -->
 <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
@@ -470,40 +447,11 @@
   $.widget.bridge('uibutton', $.ui.button);
 </script>
 <!-- Bootstrap 3.3.6 -->
-<script src="site/static/bootstrap/js/bootstrap.min.js"></script>
-<!-- AdminLTE App -->
-<script src="site/static/dist/js/app.min.js"></script>
-
-<!-- DataTables -->
-<script src="site/static/plugins/datatables/jquery.dataTables.min.js"></script>
-<script src="site/static/plugins/datatables/dataTables.bootstrap.min.js"></script>
-<!-- page script -->
-<script type="text/javascript">
-  $(document).ready(function() {
-    var dataTable = $('#datatable').DataTable( {
-      ajax: {
-        url : 'servers',
-        type: 'GET'
-      },
-      columns: [
-          { title: "Host", data:  'host'},
-          { title: "Cores", data: 'cores'},
-          { title: "CPU", data: 'cpu_load'},
-          { title: "Tasks", data: 'tasks_count'},
-          { title: "Last Update", data: 'last_update'}
-      ],
-      "paging": true,
-      // "lengthChange": true,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false
-    });
-    setInterval( function () {
-      dataTable.ajax.reload();
-    }, 30000 );
-    // table.data()[0].last_update
-  });
-</script>
+<script src="{{macro.static_url("bootstrap/js/bootstrap.min.js")}}"></script>
+  
+<!-- Script Wrapper. Contains Page Script -->
+{% block script %}{% endblock %}
+<!-- ./script-wrapper -->
+    
 </body>
 </html>

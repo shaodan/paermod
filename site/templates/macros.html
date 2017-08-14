@@ -1,0 +1,13 @@
+{# site/templates/macros.html #}
+
+{% macro nav_link(id, href, caption) %}
+{% if id==active_page %}
+  <li class="active"><a href="#"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
+{% else %}
+  <li><a href="{{ href|e }}"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
+{% endif %}
+{% endmacro %}
+
+{%- macro static_url(filename) -%}
+  {{url_for("static", filename=filename)}}
+{%- endmacro -%}
