@@ -13,61 +13,64 @@
       </ol>
     </section>
     <!-- Main content -->
+    <style>
+      [v-cloak] { display: none; }
+    </style>
     <section class="content" id="app">
       <!-- Info boxes -->
       <div class="row">
+      {%- set state_boxs = [
+        ('server', 'ion-monitor','servers.html', 'Servers', 'bg-aqua'),
+        ('running','ion-flash',  'tasks.html?state=1', 'Running', 'bg-yellow'),
+        ('waiting','ion-ios-list-outline', 'tasks.html?state=0', 'Waiting', 'bg-green'),
+        ('error',  'ion-alert-circled', 'config.html', 'Error', 'bg-red')] -%}
+      {%- for data, icon, href, caption, color in state_boxs -%}
         <div class="col-md-3 col-sm-6 col-xs-12">
-          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
-            <span class="info-box-icon bg-aqua"><i class="ion ion-monitor"></i></span>
+          <div class="info-box" onclick="location.href='{{href|e}}'" role="button">
+            <span class="info-box-icon {{color|e}}"><i class="ion {{icon|e}}"></i></span>
             <div class="info-box-content">
-              <span class="info-box-text">Servers</span>
-              <span class="info-box-number">{{ "{{server}}" }}</span>
+              <span class="info-box-text">{{caption|e}}</span>
+              <span v-if="loading" class="fa fa-spinner fa-spin fa-lg"></span>
+              <span v-else class="info-box-number" v-cloak>[{ {{data|e}} }]</span>
             </div>
-            <!-- /.info-box-content -->
           </div>
-          <!-- /.info-box -->
         </div>
-        <!-- /.col -->
-        <div class="col-md-3 col-sm-6 col-xs-12">
-          <div class="info-box click" onclick="javascript:location.href='tasks.html'" role="button">
-            <span class="info-box-icon bg-yellow"><i class="ion ion-flash"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Running</span>
-              <span class="info-box-number">{{ "{{running}}" }}</span>
-            </div>
-            <!-- /.info-box-content -->
-          </div>
-          <!-- /.info-box -->
-        </div>
-        <!-- /.col -->
-        <!-- fix for small devices only -->
-        <div class="clearfix visible-sm-block"></div>
-        <div class="col-md-3 col-sm-6 col-xs-12">
-          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
-            <span class="info-box-icon bg-green"><i class="ion ion-checkmark-circled"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Finished</span>
-              <span class="info-box-number">{{ "{{finished}}" }}</span>
-            </div>
-            <!-- /.info-box-content -->
-          </div>
-          <!-- /.info-box -->
-        </div>
-        <!-- /.col -->
-        <div class="col-md-3 col-sm-6 col-xs-12">
-          <div class="info-box" onclick="javascript:location.href='servers.html'" role="button">
-            <span class="info-box-icon bg-red"><i class="ion ion-alert-circled"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Error</span>
-              <span class="info-box-number">{{ "{{error}}" }}</span>
-            </div>
-            <!-- /.info-box-content -->
-          </div>
-          <!-- /.info-box -->
-        </div>
-        <!-- /.col -->
+      {% endfor %}
       </div>
       <!-- /.row -->
+      <div class="box box-default">
+        <div class="box-header with-border">
+            <h3 class="box-title">Task List</h3>
+            <div class="box-tools pull-right">
+                <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                </button>
+                <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+            </div>
+        </div>
+        <div class="box-body">
+          <div lass="row">
+            <div class="col-md-4">
+              <div class="chart-responsive">
+                <canvas id="pieChart" height="150"></canvas>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <ul class="chart-legend clearfix">
+                <li><i class="fa fa-circle-o text-green"></i> Finished</li>
+                <li><i class="fa fa-circle-o text-yellow"></i> Running</li>
+                <li><i class="fa fa-circle-o text-aqua"></i> Waiting</li>  
+                <li><i class="fa fa-circle-o text-red"></i> Error</li>
+<!--                 <li><i class="fa fa-circle-o text-aqua"></i> Safari</li>
+                <li><i class="fa fa-circle-o text-light-blue"></i> Opera</li>
+                <li><i class="fa fa-circle-o text-gray"></i> Navigator</li> -->
+              </ul>
+            </div>
+            <div class="col-md-4">
+              <span>1111</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
     <!-- /.content -->
 {% endblock %}
@@ -75,43 +78,141 @@
 <!-- vue.js -->
 <!-- <script src="https://unpkg.com/vue/dist/vue.js"></script> -->
 <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+<!-- <script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.full.min.js"></script> -->
+<!-- <script src="{{macro.static_url("plugins/vue/vue.min.js")}}"></script> -->
+<script src="{{macro.static_url("plugins/chartjs/Chart.min.js")}}"></script>
 
 <!-- page script -->
+{% raw %}
 <script type="text/javascript">
-  var app = new Vue({
+var app = new Vue({
     el: '#app',
     data : {
-      server: 0,
-      running: 0,
-      finished: 0,
-      error: 0
+        loading: true,
+        server: 0,
+        running: 0,
+        waiting: 0,
+        error: 0,
+        total: 0
+    },
+    delimiters: ['[{','}]'],
+    methods: {
+        getState: function() {
+            this.loading = true;
+            $.get( "state", function(data) {
+                this.server = data.data.server_count;
+                this.running = data.data.task_running;
+                this.waiting = data.data.task_waiting;
+                this.error = data.data.task_error;
+                this.total = data.data.task_total;
+                // this.finished = self.total - self.running - self.waiting;
+            }.bind(this));
+            // setTimeout(function(){this.loading = false;}.bind(this), 1000);
+            this.loading = false;    
+        }
     },
     mounted: function() {
-        this.get_state();
+        this.getState();
+        setInterval(this.getState, 30000);
+    }
+});
+$(function () {
+  var pieChartCanvas = $("#pieChart").get(0).getContext("2d");
+  var pieChart = new Chart(pieChartCanvas);
+  var PieData = [
+    {
+      value: 700,
+      color: "#f56954",
+      highlight: "#f56954",
+      label: "Chrome"
     },
-    methods: {
-      get_state: function() {
-          var self = this;
-          $.ajax({ url: "state", dataType: "json", method: 'GET',
-                  success: function(data) {
-                      self.server = data.data.server_count;
-                      self.total = data.data.task_total;
-                      self.running = data.data.task_running;
-                      self.waiting = data.data.task_waiting;
-                      self.error = data.data.task_error;
-                      self.finished = self.total - self.running - self.waiting;
-                  },
-                  error: function(data){
-                      console.log("get state error!");
-                  }
-              });
-        }
-      }
-  });
-  $(document).ready(function() {
-    setInterval( function () {
-      app.get_state();
-    }, 30000 );
-  });
+    {
+      value: 500,
+      color: "#00a65a",
+      highlight: "#00a65a",
+      label: "IE"
+    },
+    {
+      value: 400,
+      color: "#f39c12",
+      highlight: "#f39c12",
+      label: "FireFox"
+    },
+    {
+      value: 600,
+      color: "#00c0ef",
+      highlight: "#00c0ef",
+      label: "Safari"
+    },
+    {
+      value: 300,
+      color: "#3c8dbc",
+      highlight: "#3c8dbc",
+      label: "Opera"
+    },
+    {
+      value: 100,
+      color: "#d2d6de",
+      highlight: "#d2d6de",
+      label: "Navigator"
+    }
+  ];
+  var pieOptions = {
+    segmentShowStroke: true,
+    segmentStrokeColor: "#fff",
+    segmentStrokeWidth: 1,
+    legend: {
+        position: 'top',
+    },
+    percentageInnerCutout: 50,
+    animationSteps: 100,
+    animationEasing: "easeOutBounce",
+    animateRotate: true,
+    animateScale: false,
+    responsive: true,
+    maintainAspectRatio: false,
+    //String - A legend template
+    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>",
+    //String - A tooltip template
+    tooltipTemplate: "<%=value %> <%=label%> users"
+  };
+  //Create pie or douhnut chart
+  pieChart.Doughnut(PieData, pieOptions);
+});
+function materialInfo(){
+    $.get(
+        'getInfoForMaterial.do',
+        function(result){
+            var arr=[];
+            for(var i = 0;i<result.length;i++){
+                var json = {};
+                json.value = result[i].count;
+                json.color = "#"+randomColor();
+                json.highlight ="#"+randomColor();
+                json.label=result[i].name;
+                arr.push(json);
+            }
+            var pieData = arr;
+
+            var ctx = document.getElementById("myChart-material").getContext("2d");
+            window.myPie = new Chart(ctx).Pie(pieData,{
+                //responsive : true
+            });
+            myPie.defaults = {
+                segmentShowStroke : true,
+                segmentStrokeColor : "#fff",
+                segmentStrokeWidth : 2,
+                animation : true,
+                animationSteps : 100,
+                animationEasing : "easeOutBounce",
+                animateRotate : true,
+                animateScale : false,
+                onAnimationComplete : null
+            };
+        },
+        'json'
+    );
+}
 </script>
+{% endraw %}
 {% endblock %}

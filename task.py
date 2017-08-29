@@ -1,6 +1,7 @@
 #coding: utf-8
 
 import datetime
+import time
 import os
 import shutil
 from context import Context
@@ -8,13 +9,16 @@ from context import Context
 context = Context()
 
 class Task(object):
-    # state: 0: new 1:running 2:finished-OK 3:finished-Error
+    # TODO: Enum, move logic to context
     STATE_NEW = 0
-    STATE_RUNNIG = 1
+    STATE_RUNNING = 1
     STATE_OK = 2
     STATE_ERROR = 3
     STATE_STOP = 4
-    state_str = ['Waiting', 'Running', 'OK', 'Error', 'Stopped']
+    STATE_START = 5
+    STATE_CLEAN = 6
+    state_str = ['Waiting', 'Running', 'OK', 'Error', 'Stopped', 'Starting', 'Cleaning']
+    # TODO: new state(starting & cleaning)
 
     def __init__(self, pollutant, date, hour, situation=''):
         self.pollutant = pollutant
@@ -40,6 +44,7 @@ class Task(object):
         return self
 
     def start(self):
+        #TODO state starting! only when finish mark state as running
         self.state = Task.STATE_NEW
         self.prepare()
         #return self
@@ -47,15 +52,32 @@ class Task(object):
         # print run_command
         output = self.server.run_bg(run_command)
         self.start_time = datetime.datetime.now()
-        self.state = Task.STATE_RUNNIG
+        self.state = Task.STATE_RUNNING
         self.save()
         return self
+    
+    def stop(self, pid=0):
+        if self.state != Task.STATE_RUNNING:
+            return 'Task not Running'
+        if self.pid < 1:
+            return 'Task pid error'
+        # TODO: check pid is true and matches task name
+        if pid < 1:
+            pid = self.pid
+        while not self.server.updated:
+            time.sleep(1)
+        stop_command = 'kill -9 ' + str(pid)
+        sign = self.server.run(stop_command)
+        # TODO: check stop signal
+        self.state = Task.STATE_STOP
+        self.save()
+        return sign
 
     def clean(self):
         if self.state==Task.STATE_NEW:
             return
         self.copy_output_files()
-        if self.state==Task.STATE_RUNNIG:
+        if self.state==Task.STATE_RUNNING:
             self.check_finished()
         shutil.rmtree(self.path)
 
@@ -116,11 +138,13 @@ class Task(object):
         self.save()
 
     def report(self):
-        return {'name':self.name,
-                'server': self.server.host,
-                'start': str(self.start_time),
-                'rtime': str(self.run_time),
-                'state': Task.state_str[self.state],
+        return {
+            'name'  : self.name,
+            'server': self.server.host if self.server else '',
+            'start' : str(self.start_time)[:19],
+            'rtime' : context.dt_to_str(self.run_time),
+            'state' : Task.state_str[self.state],
+            'pid'   : self.pid
         }
 
     def copy_run_files(self):
@@ -156,22 +180,77 @@ class Task(object):
             if os.path.exists(source): #and not os.path.exists(target):
                 shutil.copy2(source, target)
 
-    def get_HOUREMIS(self):
-        # todo NO2 -> NOX
-        pollutant = self.pollutant if self.pollutant != "NO2" else "NOX"
-        HOUREMIS = "%sHOUREMIS/HOUREMIS_%s_%s" % (context.SOURCE_FILE_PATH, pollutant, self.date)
-        return HOUREMIS
 
+class Task2(Task):
+        
+    # TODO: task type
+    def __init__(self, ttype, attr):
+        # encode
+        self.__dict__.update(attr)
+        self.pollutant = pollutant
+        self.date = date
+        self.hour = '0'+str(hour) if hour < 10 else str(hour)
+        self.situation = situation
+        if situation:
+            self.name = "%s_%s_%s_%s" % (self.pollutant, self.date, self.hour, self.situation)
+        else:
+            self.name = "%s_%s_%s" % (self.pollutant, self.date, self.hour)
+        self.server = None
+        self.path = ''
+        self.pid = 0
+        self.state = Task.STATE_NEW
+        self.start_time = None
+        self.end_time = None
+        self.run_time = None
+        
+class Task3(Task):
+    
+    def __init__(self, name, pid):
+        self.name = name
+        self.server = None
+        self.path = ''
+        self.pid = pid
+        
+    def copy_run_files(self):
+        pass
+                
     
 class TaskFactory(object):
     
     def createTask(self, t):
         if isinstance(t, dict):
-            pollutant = t
+            name = t['name'].encode
+            server = t['server'].encode()
+            start_time = t['start_at']
+            end_time = t['end_at']
+            state = int(t['state'])
+            p, d, h, s = (name.split('_') + [''])[0:4]
+            h = int(h)
+            if server:
+                task.register(self.server_table[server])
+            task_list.append(task)
+        elif isinstance(t, tuple):
+            p, d, h, s = t
+            start_at = None
+            end_time = None
         else:
-            pollutant, date, hour, situation = 1,2,3,4
-        task = Task()
+            return None
+        task = Task(p, d, h, s)
+        task.start_time = start_time
+        task.end_time = end_time
         return task
+    
+    def createTaskFromTaskType(self, name, attrs, name_template, run_files, out_files):
+        '''
+        attrs : "[pollutant, date, hour, situation]"
+        name_template: "{p}_{d}_{h}_{s}"
+        run_files: "source:sources/{p}_{h}_{s}", aermod.inp:inps/{p}_{d}_{h}.inp,..."
+        out_files: "aermod.out:{name}.out, run.log:{name}.log"
+        '''
+        ttype = TaskType(a, n, r, o)
+        task = ttype.createTask(name)
+        # https://github.com/r1chardj0n3s/parse
+        # parse.parse(template, )
 
     
 if __name__ == '__main__':

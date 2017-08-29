@@ -62,14 +62,17 @@ class Server(object):
             return
         dirs = os.listdir(self.workspace)
         running_tasks = set([t.name for t in self.state.running])
-        for task_name in dirs:
-            task = context.get_task(task_name)
+        for name in dirs:
+            if name=='test':
+                continue
+            task = context.get_task(name)
             if task:
-                if task_name not in running_tasks:
+                #TODO: if task is waiting/restarting
+                if name not in running_tasks:
                     task.clean()
             else:
-                print 'clean task : %s%s' % (self.workspace, task_name)
-                shutil.rmtree(self.workspace+task_name)
+                print 'clean task : %s%s' % (self.workspace, name)
+                shutil.rmtree(self.workspace+name)
 
     def shutdown(self):
         # shutil.rmtree(self.workspace)
@@ -82,11 +85,17 @@ class Server(object):
         # context.get_task(task_name).register(self) for task_name in self.state.state.running
 
     def report(self, with_task=False):
-        state = self.state.to_json()
-        state['host'] = self.host
+        data = { 
+            'host'         : self.host,
+            'cores'        : self.state.cores,
+            'cpu_load'     : '%.2f%%' % self.state.cpu,
+            'tasks_count'  : len(self.state.running),
+            'tasks'        : map(lambda t:t.name, self.state.running),
+            'last_update'  : str(self.state.last_update)[:19]
+        }
         if with_task:
-            state['running'] = [t.report() for t in self.state.running]
-        return state
+            data['running'] = [t.report() for t in self.state.running]
+        return data
 
     def add_task(self, task):
         if task.name not in self.tasks:
@@ -218,6 +227,7 @@ class ServerState(object):
         self.time_delta = None
 
     def update(self):
+        self.server.updated = False
         master_time = datetime.datetime.now()
         if self.last_update is None:
             results = self.server.run_batch(ServerState.core_command, ServerState.time_command)
@@ -240,15 +250,16 @@ class ServerState(object):
             # task_name = path[-10:]
             task_name = path.split('/')[-1]
             task = context.get_task(task_name)
+            task.pid = int(pid)
             self.running.append(task)
 
             if task.state==Task.STATE_NEW: # or task.server != self.server:
                 result = self.server.run(ServerState.task_time % pid)
                 timestr = ' '.join(result.split()[:-1])
                 stime = datetime.datetime.strptime(timestr, '%a %b %d %H:%M:%S %Y')
-                task.pid = int(pid)
+                # task.pid = int(pid)
                 task.register(self.server)
-                task.state = Task.STATE_RUNNIG
+                task.state = Task.STATE_RUNNING
                 task.start_time = self.time_delta + stime
                 task.save()
             task.run_time = master_time - task.start_time
@@ -258,18 +269,7 @@ class ServerState(object):
             # day, hms = psid[-1].split('-')
             # h,m,s=hms.split(':')
             # task.run_time = datetime.timedelta(days=int(day), hours=int(h), minutes=int(m), seconds=int(s))
-
-    def to_json(self):
-        if not self.last_update:
-            pass
-            #self.update()
-        return { 'cores'        : self.cores,
-                 'cpu_load'     : '%.2f%%' % self.cpu,
-                 'tasks_count'  : len(self.running),
-                 'tasks'        : map(lambda t:t.name, self.running),
-                 'last_update'  : str(self.last_update)
-               }
-
+        self.server.updated = True
 
 if __name__ == '__main__':
     server = Server('sheet19', '/net/19/kun/')

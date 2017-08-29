@@ -31,10 +31,13 @@ class Context():
         self.SQLITE3_DB = 'sqlite3.db'
         self.MONGO_DB = 'localhost:27017'
         
+        # monitor config
+        self.MONITOR_INTERVAL = 30
+        
         # server config
         self.Master = socket.gethostname()
-        self.MAX_TASK_PER_SERVER = 10
-        self.MAX_CPU = 50
+        self.MAX_TASK_PER_SERVER = 12
+        self.MAX_CPU = 50.1
         self.MONITOR_INTERVAL = 30
         self.USER = 'kun'
         self.PASSWORD = 'wpw2016'
@@ -97,6 +100,14 @@ class Context():
         else:
             # Mon Jan 30 19:00:14 CST 2017
             return datetime.datetime.strptime(timestr, '%a %b %d %H:%M:%S %Z %Y')
+        
+    def dt_to_str(self, dt):
+        if not dt:
+            return ''
+        day = dt.days
+        mins, sec = divmod(dt.seconds, 60)
+        hour, mins = divmod(mins, 60)
+        return '%dD %02d:%02d:%02d' % (day, hour, mins, sec)
 
 if __name__ == '__main__':
     context = Context()

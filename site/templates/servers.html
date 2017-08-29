@@ -9,7 +9,7 @@
       </h1>
       <ol class="breadcrumb">
         <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li class="active">ServersPage</li>
+        <li class="active">Servers</li>
       </ol>
     </section>
     <!-- Main content -->
@@ -23,7 +23,7 @@
             </div>
             <!-- /.box-header -->
             <div class="box-body">
-              <table id='datatable' class="table table-bordered table-hover">
+              <table id='datatable' class="table table-bordered table-hover table-striped">
               </table>
             </div>
             <!-- /.box-body -->
@@ -42,30 +42,34 @@
         
 <!-- page script -->
 <script type="text/javascript">
-  $(document).ready(function() {
-    var dataTable = $('#datatable').DataTable( {
-      ajax: {
-        url : 'http://166.111.42.35:3003/servers',
-        type: 'GET'
-      },
-      columns: [
-          { title: "Host", data:  'host'},
-          { title: "Cores", data: 'cores'},
-          { title: "CPU", data: 'cpu_load'},
-          { title: "Tasks", data: 'tasks_count'},
-          { title: "Last Update", data: 'last_update'}
-      ],
-      "paging": true,
-      // "lengthChange": true,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false
+$(function() {
+    var table = $('#datatable').DataTable({
+        ajax: {
+            url : 'servers',
+            type: 'GET'
+        },
+        columns: [
+            { title: "Host", data:  'host', render: function(data, type, row, meta) {
+                // "defaultContent": "<span class='label label-success'>Success</span><button>Stop</button>";
+                return "<a href='server/"+data+"'>" + data + "</a>";
+            }},
+            { title: "Cores", data: 'cores'},
+            { title: "CPU", data: 'cpu_load'},
+            { title: "Tasks", data: 'tasks_count'},
+            { title: "Last Update", data: 'last_update'}
+        ],
+        "processing": true,
+        "autoWidth": true,
+        "paging": true,
+        "lengthChange": false,
+        "pageLength": 10,
+        "searching": false,
+        "ordering": true,
+        "info": false,
     });
     setInterval( function () {
-      dataTable.ajax.reload();
-    }, 30000 );
-    // table.data()[0].last_update
-  });
+        table.ajax.reload();
+    }, 30000);
+});
 </script>
 {% endblock %}

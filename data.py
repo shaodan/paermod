@@ -2,13 +2,14 @@
 
 import sqlite3
 from pymongo import MongoClient
-from task import Task
+from task import Task, TaskFactory
 from server import ServerFactory
 from context import Context
 
 
 context = Context()
 sf = ServerFactory()
+tf = TaskFactory()
 
 
 class DB(object):
@@ -29,37 +30,38 @@ class DB(object):
         context.tasks = self.tasks
         context.server_table = self.server_table
         context.task_table = self.task_table
-
-        context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.tasks)
+        
         # 一开始的task没有记录state，需要检查output下面的log进行判断
         # for task in context.waiting:
         #     task.check_finished()
-        # context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.waiting)
+        context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.tasks)
         
     def fetch_data(self):
         raise NotImplementedError("Class DB is NOT instanceable!")
         
-    def get_finished_tasks():
+    def get_finished_tasks(self):
         outputs = os.listdir(Task.OUTPUT_FILE_PATH)
 
-    def get_runnig_tasks():
+    def get_runnig_tasks(self):
         tasks = []
         for server in get_server_table().values():
             tasks.extend(server.state.running_tasks)
         return tasks
+    
+    def save_data(self):
+        #TODO: save data
+        pass
 
         
 class DBMongo(DB):
 
     def fetch_data(self):
+        #TODO auto-reload data by a timer
         if not self.db:
             client = MongoClient('localhost', 27017)
             self.db = client['aermod']
         server_list = []
         for s in self.db.servers.find():
-            # host = s['host'].encode()
-            # workspace = s['workspace'].encode()
-            # weight = s['weight']
             new_server = sf.createServer(s)
             server_list.append(new_server)
         self.servers = server_list
@@ -86,8 +88,9 @@ class DBMongo(DB):
         self.tasks = task_list
         self.task_table = {task.name: task for task in task_list}
     
-
-
+    def create_table(self, table):
+        self.db.add_collection(table)
+    
 
 class DBMockup(DB):
 
@@ -97,13 +100,12 @@ class DBMockup(DB):
         weights = [3, 1, 1, 1, 1, 3]
         pollutants = ["BC", "CO", "NO2", "PM"]
         dates = ["0103", "0403", "0703", "1003"]
-        situations = ['wkd', 'wke', 'apec', 'jam']
-        situations = situations[1:]
         hours = range(1, 25)
+        situations = ['wkd', 'wke', 'apec', 'jam']
         self.servers = [sf.createServer(t) for t in zip(hosts, spaces, weights)]
         self.server_table = {server.host: server for server in self.servers}
         # self.tasks  = [Task(p, d, h) for p in pollutants for d in dates for h in hours]
-        self.tasks = [Task(p, d, h, s) for p in pollutants for d in dates for h in hours for s in situations]
+        self.tasks = [tf.createTask((p, d, h, s)) for p in pollutants for d in dates for h in hours for s in situations]
         self.task_table = {task.name: task for task in self.tasks}
 
 

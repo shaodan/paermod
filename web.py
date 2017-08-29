@@ -37,6 +37,12 @@ class MyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler, object):
                 running.extend(s.state.running)
             output = {'data' : [t.report() for t in running]}
             self.jsonify(output)
+        elif self.path.startswith("/waiting"):
+            output = {'data' : [t.report() for t in context.waiting]}
+            self.jsonify(output)
+        elif self.path.startswith("/taskall"):
+            output = {'data' : [t.report() for t in context.tasks]}
+            self.jsonify(output)
         elif self.path.startswith("/server/"):
             host = self.path[8:]
             server = context.server_table[host]

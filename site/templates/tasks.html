@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 {% set active_page = "tasks" %}
 {% block content %}
-
     <!-- Content Header (Page header) -->
     <section class="content-header">
       <h1>
@@ -10,7 +9,8 @@
       </h1>
       <ol class="breadcrumb">
         <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li class="active">TasksPage</li>
+        <li><a href="#">Tasks</a></li>
+        <li class="active">Running</li>
       </ol>
     </section>
     <!-- Main content -->
@@ -24,7 +24,7 @@
             </div>
             <!-- /.box-header -->
             <div class="box-body">
-              <table id='datatable' class="table table-bordered table-hover">
+              <table id='datatable' class="table table-bordered table-hover table-striped">
               </table>
             </div>
             <!-- /.box-body -->
@@ -32,6 +32,42 @@
           <!-- /.box -->
       </div>
     </section>
+    <div class="modal fade" id="modal-stop">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Confirm</h4>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure to STOP task[<b></b>]?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="stopTask();">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="modal-start">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Confirm</h4>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure to START task [<b></b>]?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="startTask();">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- /.content -->
 {% endblock %}
 {% block script %}
@@ -43,30 +79,68 @@
 
 <!-- page script -->
 <script type="text/javascript">
-  $(document).ready(function() {
-    var table = $('#datatable').DataTable( {
-      ajax: {
-        url : 'http://166.111.42.35:3003/running',
-        type: 'GET'
-      },
-      columns: [
-          { title: "Task", data:  'name'},
-          { title: "Server", data: 'server'},
-          { title: "Start", data: 'start'},
-          { title: "Duration", data: 'rtime'},
-          { title: "State", data: 'state'}
-      ],
-      "paging": true,
-      "lengthChange": false,
-      "pageLength": 20,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": true
+function stopTask() {
+    console.log('stop task '+window.taskName);
+    $.ajax({
+       url: 'task/'+window.taskName+'/stop',
+       type: 'PUT',
+       success: function(response) {
+           $('.modal-body p').each(function () {
+               this.innerHTML = response;
+           });
+       }
+    });
+};
+function changeTask(task) {
+    window.taskName = task;
+    $('.modal-body p').each(function () {
+        this.innerHTML = 'Are you sure to START task [<b>'+task+'</b>]?';
+    });
+};
+$(function() {
+    var table = $('#datatable').DataTable({
+        ajax: {
+            url : 'tasks?state={{state}}',
+            type: 'GET'
+        },
+        columns: [
+            { title: "Task", data:  'name' },
+            { title: "Server", data: 'server', render: function(data, type, row, meta) {
+                if (data)
+                    return "<a href='server/"+data+"'>" + data + "</a>";
+                else
+                    return data;
+            }},
+            { title: "Duration", data: 'rtime'},
+            { title: "Start", data: 'start'},
+            // { title: "Status", data: 'state'}
+            { title: "Status", data: 'state', render: function(data, type, row, meta) {
+                if (data=='Running') {
+                    return "<span class='label label-info'>Running</span>";
+                } else {
+                    return "<span class='label label-warning'>Waiting</span>";
+                }
+            }},
+            { title: "Action", data: 'state', render: function(data, type, row, meta) {
+                if (data=='Running') {
+                    return '<button type="button" class="btn btn-danger btn-xs" data-toggle="modal" data-target="#modal-stop" onclick="changeTask(\''+row.name+'\');">Stop</button>';
+                } else {
+                    return '<button type="button" class="btn btn-info btn-xs" data-toggle="modal" data-target="#modal-start" onclick="changeTask(\''+row.name+'\');">Start</button>';
+                }
+            }},
+        ],
+        "processing": true,
+        "autoWidth": true,
+        "paging": true,
+        "lengthChange": false,
+        "pageLength": 20,
+        "searching": true,
+        "ordering": true,
+        "info": true
     });
     setInterval( function () {
-      table.ajax.reload();
-    }, 30000 );
-  });
+        table.ajax.reload();
+    }, 30000);
+});
 </script>
 {% endblock %}

@@ -9,7 +9,8 @@
       </h1>
       <ol class="breadcrumb">
         <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li class="active">ServersPage</li>
+        <li><a href="/servers.html">Servers</a></li>
+        <li class="active">{{server.host}}</li>
       </ol>
     </section>
     <!-- Main content -->
@@ -19,11 +20,31 @@
         <div class="col-xs-12">
           <div class="box">
             <div class="box-header">
-              <h3 class="box-title">服务器列表</h3>
+              <h3 class="box-title">{{server['host']}}: {{server['cpu_load']}}</h3>
             </div>
             <!-- /.box-header -->
-            <div class="box-body">
-              <table id='datatable' class="table table-bordered table-hover">
+            {%- set status_style = {
+                'Running' : 'info',
+                'Ok'      : 'success'
+            }-%}
+            <div class="box-body table-responsive no-padding">
+              <table class="table table-hover">
+                <tr>
+                  <th>Pid</th>
+                  <th>Name</th>
+                  <th>Duration</th>
+                  <th>Start</th>
+                  <th>Status</th>
+                </tr>
+                {% for t in server['running'] %}
+                <tr>
+                  <td>{{ t.pid }}</td>
+                  <td>{{ t.name }}</td>
+                  <td>{{ t.rtime }}</td>
+                  <td>{{ t.start }}</td>
+                  <td><span class="label label-{{status_style[t.state]}}">{{ t.state }}</span></td>
+                </tr>
+                {% endfor %}
               </table>
             </div>
             <!-- /.box-body -->
@@ -34,38 +55,7 @@
     <!-- /.content -->
 {% endblock %}
 {% block script %}
-<!-- AdminLTE App -->
-<script src="{{macro.static_url("dist/js/app.min.js")}}"></script>
-<!-- DataTables -->
-<script src="{{macro.static_url("plugins/datatables/jquery.dataTables.min.js")}}"></script>
-<script src="{{macro.static_url("plugins/datatables/dataTables.bootstrap.min.js")}}"></script>
-        
 <!-- page script -->
 <script type="text/javascript">
-  $(document).ready(function() {
-    var dataTable = $('#datatable').DataTable( {
-      ajax: {
-        url : 'http://166.111.42.35:3003/servers',
-        type: 'GET'
-      },
-      columns: [
-          { title: "Host", data:  'host'},
-          { title: "Cores", data: 'cores'},
-          { title: "CPU", data: 'cpu_load'},
-          { title: "Tasks", data: 'tasks_count'},
-          { title: "Last Update", data: 'last_update'}
-      ],
-      "paging": true,
-      // "lengthChange": true,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false
-    });
-    setInterval( function () {
-      dataTable.ajax.reload();
-    }, 30000 );
-    // table.data()[0].last_update
-  });
 </script>
 {% endblock %}

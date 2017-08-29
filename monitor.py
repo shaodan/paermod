@@ -16,23 +16,24 @@ context = Context()
 
 
 class Monitor(threading.Thread):
-    def __init__(self, interval=30, log=False, keep_alive=True):
+    def __init__(self, log=False, keep_alive=True):
         super(Monitor, self).__init__(name='Monitor Thread')
         self.servers = context.servers
-        self.interval = interval
+        self.interval = context.MONITOR_INTERVAL
         self.log = log
         self.keep_alive = keep_alive
         self.lock = threading.Lock()
+        # self.mark = len(self.servers)
 
     def handler(self, s):
         s.monitor()
         if self.log:
+            self.lock.acquire()
             print '%s: %0.2f%% Tasks: %d' % (s.host, s.state.cpu, len(s.state.running))
             print map(lambda t:t.name, s.state.running)
-        s.clean()
-        # self.lock.acquire()
-        # context.running.extend(s.state.running)
-        # self.lock.release()
+            self.lock.release()
+        # s.clean()
+        # s.state.updated = True
         
     def stop(self):
         self.keep_alive = False
@@ -42,6 +43,7 @@ class Monitor(threading.Thread):
         # for s in self.servers:
         #     self.handler(s)
         # return
+        
         ## asynchronization
         # 1. gevent coroutine
         # gevent.joinall([gevent.spawn(s.monitor) for s in servers])
@@ -49,12 +51,12 @@ class Monitor(threading.Thread):
         self.pool = ThreadPool(len(self.servers))
         while 1:
             print '>>>> Update Server State: ' + str(datetime.now())
-            # for s in self.servers:
-            #     self.handler(s)
+            # self.mark = len(self.servers)
             self.pool.map(self.handler, self.servers)
             for i in xrange(5):
                 if not self.keep_alive:
                     print 'monitor stoping...'
+                    # pool must close before join(wait workers finish)
                     self.pool.close()
                     self.pool.join()
                     print 'monitor stoped!'
@@ -63,6 +65,8 @@ class Monitor(threading.Thread):
             context.running = []
             for s in context.servers:
                 context.running.extend(s.state.running)
+            #TODO 避免重复启动
+            context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.waiting)
             print 'Waiting Tasks: ', len(context.waiting)
             print 'Running Tasks: ', len(context.running)
             self.task_queue()
@@ -105,6 +109,13 @@ class Monitor(threading.Thread):
                 total_free -= 1
                 free[s.host] -= s.weight
         context.waiting = filter(lambda t:t.state==Task.STATE_NEW, context.waiting)
+        
+    def stop_task(self, task):
+        pass
+        # task = context.get_task(task)
+        # if task:
+        #     return task.stop()
+        # return 'Task Not Found'
 
 
 if __name__ == '__main__':

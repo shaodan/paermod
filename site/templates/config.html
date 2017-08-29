@@ -23,8 +23,12 @@
             </div>
             <!-- /.box-header -->
             <div class="box-body">
-              <table id='datatable' class="table table-bordered table-hover">
-              </table>
+              <form>
+                  <label>Servers: <input type='servers' /></label>
+                  <label>Tasks: <input type='tasks' /></label>
+                  <label>Status: <input type='status' /></label>
+                  <input type='submit' />
+              </form>
             </div>
             <!-- /.box-body -->
           </div>
@@ -42,6 +46,5 @@
         
 <!-- page script -->
 <script type="text/javascript">
-  console.log('config page');
 </script>
 {% endblock %}
