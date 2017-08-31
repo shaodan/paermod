@@ -74,6 +74,9 @@ class Task(object):
     def clean(self):
         if self.state==Task.STATE_NEW:
             return
+        if self.state==Task.STATE_STOP:
+            shutil.rmtree(self.path)
+            return
         self.copy_output_files()
         if self.state==Task.STATE_RUNNING:
             self.check_finished()

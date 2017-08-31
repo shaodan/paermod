@@ -20,6 +20,8 @@ def parse_oqa(date):
                 continue
             h = int(DATE[-4:-2])
             DIR = line[3]
+            if DIR!='***' and int(DIR) >= 990:
+                DIR = '***'
             SPD = line[4]
             TEMP = line[21]
             STP = line[25]
@@ -129,8 +131,8 @@ def parse_deepspace(month):
         avg[:, :, 4] *= 5.144
         # print avg
 
-        # with open(base+'2013_'+str(month)+'_ds_count.csv', 'w') as out:
-        with open(base+'2013_'+str(month)+'_ds.csv', 'w') as out:
+        # with open(base+str(month)+'_ds_count.csv', 'w') as out:
+        with open(base+str(month)+'_ds.csv', 'w') as out:
             out.write('PRES, HGHT, TEMP, DWPT, DRCT, SKNT\n')
             timestr = ['00Z\n', '12Z\n']
             for t in range(2):
@@ -204,12 +206,12 @@ fuck_how_to_end_this_1()
 fuck_how_to_end_this_2()
 
 
-# dates = ['2013.01', '2013.04', '2013.07', '2013.10']
+# dates = ['2013.01', '2013.04', '2013.07', '2013.10', 'APEC']
 # for date in dates:
 #     print 'parsing ' + date
 #     parse_oqa(date)
 
-# months = [1, 4, 7, 10]
+# months = [1, 4, 7, 10, 'APEC']
 # for month in months:
 #     print 'parsing ' + str(month)
 #     parse_deepspace(month)
