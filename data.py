@@ -21,7 +21,6 @@ class DB(object):
         self.server_table = None
         self.tasks = None
         self.task_table = None
-        self.load_data()
 
     def load_data(self):
         self.fetch_data()
@@ -48,18 +47,21 @@ class DB(object):
             tasks.extend(server.state.running_tasks)
         return tasks
     
-    def save_data(self):
-        #TODO: save data
-        pass
+    def add_tasks(self, tasks):
+        context.db = self
+        for t in tasks:
+            t.save()
 
         
 class DBMongo(DB):
+    
+    def __init__(self):
+        super(self.__class__, self).__init__()
+        client = MongoClient('localhost', 27017)
+        self.db = client['aermod']
 
     def fetch_data(self):
         #TODO auto-reload data by a timer
-        if not self.db:
-            client = MongoClient('localhost', 27017)
-            self.db = client['aermod']
         server_list = []
         for s in self.db.servers.find():
             new_server = sf.createServer(s)
@@ -76,7 +78,7 @@ class DBMongo(DB):
             start_time = t['start_at']
             end_time = t['end_at']
             state = int(t['state'])
-            p, d, h, s = (name.split('_') + [''])[0:4]
+            p, s, d, h = (name.split('_') + [''])[0:4]
             task = Task(p, d, int(h), s)
             task.state = state
             task.start_time = start_time if start_time else None
@@ -93,19 +95,25 @@ class DBMongo(DB):
     
 
 class DBMockup(DB):
+    
+    def __init__(self):
+        super(self.__class__, self).__init__()
+        self.fetch_data()
 
     def fetch_data(self):
         hosts = ['sheet20', 'sheet16', 'sheet17', 'sheet18', 'sheet19', 'sheet21']
         spaces = ['/net/20/kun/AERMOD/', '/net/12/kun/', '/net/17/kun/', '/net/18/kun/', '/net/19/kun/', '/net/21_2/kun/']
         weights = [3, 1, 1, 1, 1, 3]
-        pollutants = ["BC", "CO", "NO2", "PM"]
+        # pollutants = ["BC", "CO", "NO2", "PM"]
+        pollutants = ["BC", "PM"]
         dates = ["0103", "0403", "0703", "1003"]
         hours = range(1, 25)
-        situations = ['wkd', 'wke', 'apec', 'jam']
+        # situations = ['wkd', 'wke', 'apec', 'jam']
+        situations = ['wkd', 'wke']
         self.servers = [sf.createServer(t) for t in zip(hosts, spaces, weights)]
         self.server_table = {server.host: server for server in self.servers}
-        # self.tasks  = [Task(p, d, h) for p in pollutants for d in dates for h in hours]
-        self.tasks = [tf.createTask((p, d, h, s)) for p in pollutants for d in dates for h in hours for s in situations]
+        self.tasks  = [Task(p, d, h, s) for p in pollutants for s in situations for d in dates for h in hours]
+        # self.tasks = [tf.createTask((p, d, h, s)) for p in pollutants for s in situations for d in dates for h in hours]
         self.task_table = {task.name: task for task in self.tasks}
 
 
@@ -134,7 +142,5 @@ if __name__ == '__main__':
     # d = DB()
     dbm = DBMockup()
     dbg = DBMongo()
-    for t in dbm.tasks:
-        # print t.name
-        t.save()
+    dbg.add_tasks(dbm.tasks)
 

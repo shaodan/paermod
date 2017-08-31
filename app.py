@@ -2,12 +2,15 @@
 
 import threading
 import requests
+import logging
 from flask import Flask, request, render_template, Response, json, jsonify
 from context import Context
 from monitor import Monitor
 import data
 
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 api_server = 'http://localhost:3003/'
 app = Flask(__name__, template_folder='site/templates', static_folder='site/static')
 # static_path=None, static_url_path=None, static_folder=’static’, template_folder=’templates’, instance_path=None, instance_relative_config=False, root_path=None
@@ -15,11 +18,13 @@ app = Flask(__name__, template_folder='site/templates', static_folder='site/stat
 
 def start_server(port=3000):
     db = data.DBMongo()
+    db.load_data()
     app.context = Context()
     app.monitor = Monitor()
     app.monitor.start()
     app.run(host='', port=port, threaded=True, debug=False)
     app.monitor.stop()
+    app.monitor.join()
 
 # @app.route('/<string:page_name>/')
 # def static_page(page_name):

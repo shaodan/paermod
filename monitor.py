@@ -32,7 +32,7 @@ class Monitor(threading.Thread):
             print '%s: %0.2f%% Tasks: %d' % (s.host, s.state.cpu, len(s.state.running))
             print map(lambda t:t.name, s.state.running)
             self.lock.release()
-        # s.clean()
+        s.clean()
         # s.state.updated = True
         
     def stop(self):

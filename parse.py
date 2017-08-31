@@ -121,6 +121,50 @@ def parse_source_from_excel():
     for p in pollutants:
         parse_source_p(p)
 
+def parse_source_from_excel_new():
+    pollutants = ['BC', 'PM']
+    situations = ['wkd', 'wke', 'jam', 'apec']
+    base = '/net/20/kun/source/'
+    STK_nums = 169908
+    params_rate = np.zeros((STK_nums, 24))
+    params_location = [None]*STK_nums
+    params_width = [''] * STK_nums
+
+    def parse_source_ps(p, s, fisrt):
+        ps = '%s_%s' % (p, s)
+        print 'parsing %s ...' % ps
+        with open(base+ps+'.csv') as infile:
+            i = 0
+            infile.readline()
+            for line in infile:
+                line = line.split(',')
+                rate = line[31:55]
+                params_rate[i, :] = rate
+                if first:
+                    location = [int(l) for l in line[55:60]]
+                    width = line[5]
+                    for j in range(4):
+                        location[j] -= 420000
+                    params_location[i] = ' '.join(str(item) for item in location)
+                    params_width[i] = width
+                i += 1
+                
+        for h in range(1, 25):
+            hh = '0'+str(h) if h < 10 else str(h)
+            outfile = base+'sources/'+ps+'_'+hh
+            print 'writing to ' + outfile
+            with open(outfile, 'w') as o:
+                for i in xrange(STK_nums):
+                    o.write('SO LOCATION STK%d LINE %s\n' % (i+1, params_location[i]))
+                    o.write('SO SRCPARAM STK%d %.4E 0.4 %s 0\n' % (i+1, params_rate[i, h-1], params_width[i]))
+
+    first = True
+    for p in pollutants:
+        for s in situations:
+            parse_source_ps(p, s, first)
+            first = False
+        
+# deprecated
 def parse_source():
     '''
     污染物为PM时，需要把HOUREMIS里面SRC参数写入对应hour的source文件
@@ -160,4 +204,5 @@ def parse_source():
 #parse_inp()
 # parse_houremis()
 # parse_source()
-parse_source_from_excel()
+# parse_source_from_excel()
+parse_source_from_excel_new()

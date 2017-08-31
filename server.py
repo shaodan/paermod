@@ -63,8 +63,6 @@ class Server(object):
         dirs = os.listdir(self.workspace)
         running_tasks = set([t.name for t in self.state.running])
         for name in dirs:
-            if name=='test':
-                continue
             task = context.get_task(name)
             if task:
                 #TODO: if task is waiting/restarting
@@ -154,6 +152,9 @@ class Server(object):
         chan.exec_command(command)
         # f.read()
         # f.close()
+        
+    def kill_all_task(self):
+        return self.run(ServerState.kill_aermod)
 
         
 class LocalServer(Server):
@@ -214,7 +215,7 @@ class ServerState(object):
     task_time = "ps -o lstart,etime %s | awk 'NR>1'"
 
     kill_run_sh = "kill -9 $(ps -o ppid $(pgrep aermod)| awk 'NR>1')"
-    kill_aermod = "kill -9 $(pgrep aermod)"
+    kill_aermod = "killall -9 aermod"
 
     def __init__(self, server):
         self.server = server

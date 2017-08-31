@@ -10,6 +10,7 @@ context = Context()
 
 class Task(object):
     # TODO: Enum, move logic to context
+    NAME_TEMPLATE = '{pollutant}_{date}_{situation}_{hour}'
     STATE_NEW = 0
     STATE_RUNNING = 1
     STATE_OK = 2
@@ -20,15 +21,12 @@ class Task(object):
     state_str = ['Waiting', 'Running', 'OK', 'Error', 'Stopped', 'Starting', 'Cleaning']
     # TODO: new state(starting & cleaning)
 
-    def __init__(self, pollutant, date, hour, situation=''):
+    def __init__(self, pollutant, date, hour, situation):
         self.pollutant = pollutant
         self.date = date
         self.hour = '0'+str(hour) if hour < 10 else str(hour)
         self.situation = situation
-        if situation:
-            self.name = "%s_%s_%s_%s" % (self.pollutant, self.date, self.hour, self.situation)
-        else:
-            self.name = "%s_%s_%s" % (self.pollutant, self.date, self.hour)
+        self.name = "%s_%s_%s_%s" % (self.pollutant,self.situation, self.date, self.hour)
         self.server = None
         self.path = ''
         self.pid = 0
@@ -152,10 +150,9 @@ class Task(object):
             ('aermod'     , 'aermod'),
             ('receptor'   , 'receptor'),
             ('aermod.inp' , 'inps/{pollutant}_{date}_{hour}.inp'),
-            ('source'     , 'sources/{pollutant}_{hour}_{situation}'),
-            ('MP.PFL'     , 'MPs/13{date}/MP.PFL'),
-            ('MP.SFC'     , 'MPs/13{date}/MP.SFC'),
-            # ('HOUREMIS'   , 'HOUREMIS/{BC_0103}')
+            ('source'     , 'sources/{pollutant}_{situation}_{hour}'),
+            ('MP.PFL'     , 'MPs/13{date}.PFL'),
+            ('MP.SFC'     , 'MPs/13{date}.SFC'),
         ]
         for t, s in run_files:
             s = context.SOURCE_FILE_PATH + s
@@ -191,10 +188,7 @@ class Task2(Task):
         self.date = date
         self.hour = '0'+str(hour) if hour < 10 else str(hour)
         self.situation = situation
-        if situation:
-            self.name = "%s_%s_%s_%s" % (self.pollutant, self.date, self.hour, self.situation)
-        else:
-            self.name = "%s_%s_%s" % (self.pollutant, self.date, self.hour)
+        self.name = "%s_%s_%s_%s" % (self.pollutant, self.date, self.hour, self.situation)
         self.server = None
         self.path = ''
         self.pid = 0
@@ -202,17 +196,6 @@ class Task2(Task):
         self.start_time = None
         self.end_time = None
         self.run_time = None
-        
-class Task3(Task):
-    
-    def __init__(self, name, pid):
-        self.name = name
-        self.server = None
-        self.path = ''
-        self.pid = pid
-        
-    def copy_run_files(self):
-        pass
                 
     
 class TaskFactory(object):

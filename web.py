@@ -130,7 +130,8 @@ class WebServer(object):
     def __init__(self, port=8000):
         self.port = port
         self.httpd = ThreadedHTTPServer(("", port), MyHandler)
-        data.DBMongo()
+        db = data.DBMongo()
+        db.load_data()
         self.context = Context()
         self.m = Monitor()
         self.m.start()

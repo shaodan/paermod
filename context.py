@@ -56,7 +56,7 @@ class Context():
             'task_total'    : len(self.tasks),
             'task_running'  : sum([len(s.state.running) for s in self.servers]),
             'task_waiting'  : len(self.waiting),
-            'task_error'    : 96
+            'task_error'    : 0
         }
 
     def get_server(self, host):
