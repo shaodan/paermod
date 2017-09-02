@@ -143,9 +143,9 @@ def parse_deepspace(month):
                     # print line
                     out.write(','.join([str(l) for l in line])+'\n')
 
-def fuck_how_to_end_this_1():
+def interpolation_sf(filename):
     u'气象/EX01_SF.OQA'
-    book = xlrd.open_workbook(u'气象/地面气象汇总.xlsx')
+    book = xlrd.open_workbook(filename)
     # print book.sheet_names()
     sample = ' 13010300    -9 99999 10030   300 00000 09999 00300 00300 00300 00300\n         00300 09999 00000 00099 00999 99999   -22   999   999   999    30    36  N'
     for sheet in book.sheets():
@@ -171,8 +171,8 @@ def fuck_how_to_end_this_1():
             oqa.write(' '.join(line[:11]) + '\n         ' + ' '.join(line[11:]) + '\n')
         oqa.close()
 
-def fuck_how_to_end_this_2():
-    book = xlrd.open_workbook(u'气象/探空插值.xlsx')
+def interpolation_ds(filename):
+    book = xlrd.open_workbook(filename)
     sheet1, sheet2 =  book.sheets()
     sample = ' 13010407   28\n  10134      0   -160   -182    170     10'
     # print sample
@@ -202,8 +202,8 @@ def fuck_how_to_end_this_2():
             lines = []
 
 
-fuck_how_to_end_this_1()
-fuck_how_to_end_this_2()
+interpolation_sf(u'气象/地面气象汇总.xlsx')
+interpolation_ds(u'气象/探空插值.xlsx')
 
 
 # dates = ['2013.01', '2013.04', '2013.07', '2013.10', 'APEC']
