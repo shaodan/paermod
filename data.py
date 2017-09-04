@@ -51,6 +51,17 @@ class DB(object):
         context.db = self
         for t in tasks:
             t.save()
+            
+    def add_servers(self, servers):
+        context.db = self
+        for s in servers:
+            self.db.servers.insert_one(
+                {
+                    'host'      : s.host,
+                    'workspace' : s.workspace,
+                    'weight'    : s.weight
+                }
+            )
 
         
 class DBMongo(DB):
@@ -78,7 +89,7 @@ class DBMongo(DB):
             start_time = t['start_at']
             end_time = t['end_at']
             state = int(t['state'])
-            p, s, d, h = (name.split('_') + [''])[0:4]
+            p, s, d, h = name.split('_')
             task = Task(p, d, int(h), s)
             task.state = state
             task.start_time = start_time if start_time else None

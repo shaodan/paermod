@@ -24,6 +24,11 @@ class Task(object):
     def __init__(self, pollutant, date, hour, situation):
         self.pollutant = pollutant
         self.date = date
+        # 合并
+        if situation == 'apec':
+            self.real_date = '14' + date
+        else:
+            self.real_date = '13' + date
         self.hour = '0'+str(hour) if hour < 10 else str(hour)
         self.situation = situation
         self.name = "%s_%s_%s_%s" % (self.pollutant,self.situation, self.date, self.hour)
@@ -154,8 +159,8 @@ class Task(object):
             ('receptor'   , 'receptor'),
             ('aermod.inp' , 'inps/{pollutant}_{date}_{hour}.inp'),
             ('source'     , 'sources/{pollutant}_{situation}_{hour}'),
-            ('MP.PFL'     , 'MPs/13{date}.PFL'),
-            ('MP.SFC'     , 'MPs/13{date}.SFC'),
+            ('MP.PFL'     , 'MPs/{date_with_year}.PFL'),
+            ('MP.SFC'     , 'MPs/{date_with_year}.SFC'),
         ]
         for t, s in run_files:
             s = context.SOURCE_FILE_PATH + s

@@ -35,7 +35,7 @@ class Server(object):
             return
         try:
             if not os.path.isdir(self.workspace):
-                os.mkdirs(self.workspace)
+                os.mkdir(self.workspace)
         except Exception as e:
             print("setup workspace fail: " + self.workspace)
             print(e.message)
