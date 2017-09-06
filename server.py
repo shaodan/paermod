@@ -154,7 +154,10 @@ class Server(object):
         # f.close()
         
     def kill_all_task(self):
-        return self.run(ServerState.kill_aermod)
+        return self.run(ServerState.kill_aermods)
+    
+    def kill_by_pid(self):
+        return self.run(ServerState.kill_pid+str(pid))
 
         
 class LocalServer(Server):
@@ -215,7 +218,9 @@ class ServerState(object):
     task_time = "ps -o lstart,etime %s | awk 'NR>1'"
 
     kill_run_sh = "kill -9 $(ps -o ppid $(pgrep aermod)| awk 'NR>1')"
-    kill_aermod = "killall -9 aermod"
+    kill_aermods = "killall -9 aermod"
+    kill_pid = 'kill -9 '
+
 
     def __init__(self, server):
         self.server = server

@@ -28,7 +28,7 @@ def parse_psd(p, s, d):
     psd = '%s_%s_%s.xlsx' % (p, s, d)
     if os.path.exists(export_dir + psd):
         print psd + ' already exist'
-        return
+        # return
     day_data = [None] * 24
     # for hour in hours:
     #     h = '0'+str(hour) if hour < 10 else str(hour)
@@ -79,6 +79,9 @@ def parse_psd(p, s, d):
 
 
 parse_psd('PM', 'wkd', '0703')
+parse_psd('PM', 'wkd', '1003')
+parse_psd('PM', 'wkd', '0103')
+parse_psd('PM', 'wkd', '0403')
 
 
 

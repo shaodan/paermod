@@ -62,11 +62,11 @@ class Task(object):
     def stop(self, pid=0):
         if self.state != Task.STATE_RUNNING:
             return 'Task not Running'
-        if self.pid < 1:
-            return 'Task pid error'
         # TODO: check pid is true and matches task name
         if pid < 1:
             pid = self.pid
+        if pid < 1:
+            return 'Task pid error'
         while not self.server.updated:
             time.sleep(1)
         stop_command = 'kill -9 ' + str(pid)
@@ -83,6 +83,7 @@ class Task(object):
             shutil.rmtree(self.path)
             return
         self.copy_output_files()
+        # TODO: 先检查完成情况，再拷贝
         if self.state==Task.STATE_RUNNING:
             self.check_finished()
         shutil.rmtree(self.path)
@@ -90,8 +91,10 @@ class Task(object):
     def prepare(self):
         if os.path.isdir(self.path):
             # shutil.copy2(os.getcwd()+"/run.sh", self.path)
-            return
-        os.mkdir(self.path)
+            # return
+            pass
+        else:
+            os.mkdir(self.path)
         self.copy_run_files()
 
     def change_state(self, new_state):
@@ -114,6 +117,7 @@ class Task(object):
         if self.state==Task.STATE_ERROR or self.state==Task.STATE_OK:
             return
         logfile = context.OUTPUT_FILE_PATH+self.name+'.log'
+        # logfile = self.path+'/run.log'
         if not os.path.exists(logfile):
             return
         has_error = False
@@ -159,8 +163,8 @@ class Task(object):
             ('receptor'   , 'receptor'),
             ('aermod.inp' , 'inps/{pollutant}_{date}_{hour}.inp'),
             ('source'     , 'sources/{pollutant}_{situation}_{hour}'),
-            ('MP.PFL'     , 'MPs/{date_with_year}.PFL'),
-            ('MP.SFC'     , 'MPs/{date_with_year}.SFC'),
+            ('MP.PFL'     , 'MPs/{real_date}.PFL'),
+            ('MP.SFC'     , 'MPs/{real_date}.SFC'),
         ]
         for t, s in run_files:
             s = context.SOURCE_FILE_PATH + s

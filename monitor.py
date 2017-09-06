@@ -26,6 +26,7 @@ class Monitor(threading.Thread):
         # self.mark = len(self.servers)
 
     def handler(self, s):
+        #TODO: Observer Pattern
         s.monitor()
         if self.log:
             self.lock.acquire()
