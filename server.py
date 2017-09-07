@@ -25,6 +25,7 @@ class Server(object):
         self.tasks = {}
         self.state = ServerState(self)
         self.updated = False
+        self.system = ''
 
     def setup(self):
         # establish ssh connection
@@ -89,7 +90,8 @@ class Server(object):
             'cpu_load'     : '%.2f%%' % self.state.cpu,
             'tasks_count'  : len(self.state.running),
             'tasks'        : map(lambda t:t.name, self.state.running),
-            'last_update'  : str(self.state.last_update)[:19]
+            'last_update'  : str(self.state.last_update)[:19],
+            'system'       : self.system
         }
         if with_task:
             data['running'] = [t.report() for t in self.state.running]
@@ -208,6 +210,7 @@ class ServerFactory(object):
 class ServerState(object):
     core_command = "grep -c ^processor /proc/cpuinfo"
     time_command = "date"
+    sys_command = 'lsb_release -d'
     cpu_command = "mpstat 2 1 | awk 'NR==5 {print $3}'"
     mem_command = "free -m | awk 'NR==2{print $4, $2}'"
     disk_command = "df -h %s | awk '{print $4, $2, $5}'"
@@ -236,9 +239,10 @@ class ServerState(object):
         self.server.updated = False
         master_time = datetime.datetime.now()
         if self.last_update is None:
-            results = self.server.run_batch(ServerState.core_command, ServerState.time_command)
+            results = self.server.run_batch(ServerState.core_command, ServerState.time_command, ServerState.sys_command)
             self.cores = int(results[0])
             local_time = context.parse_time(results[1])
+            self.server.system = results[2][13:]
             self.time_delta = master_time - local_time
         self.last_update = master_time
         results = self.server.run_batch(ServerState.cpu_command, ServerState.pwdx_command)
