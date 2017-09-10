@@ -82,10 +82,11 @@ class Task(object):
         if self.state==Task.STATE_STOP:
             shutil.rmtree(self.path)
             return
-        self.copy_output_files()
         # TODO: 先检查完成情况，再拷贝
         if self.state==Task.STATE_RUNNING:
             self.check_finished()
+        if self.state==Task.STATE_OK or self.state==Task.STATE_ERROR:
+            self.copy_output_files()
         shutil.rmtree(self.path)
 
     def prepare(self):
@@ -116,8 +117,8 @@ class Task(object):
     def check_finished(self):
         if self.state==Task.STATE_ERROR or self.state==Task.STATE_OK:
             return
-        logfile = context.OUTPUT_FILE_PATH+self.name+'.log'
-        # logfile = self.path+'/run.log'
+        # logfile = context.OUTPUT_FILE_PATH+self.name+'.log'
+        logfile = self.path+'/run.log'
         if not os.path.exists(logfile):
             return
         has_error = False
@@ -133,18 +134,22 @@ class Task(object):
                     has_error = True
         if has_error:
             self.state = Task.STATE_ERROR
-        else:
-            self.state = Task.STATE_OK
-        # 早期有的log没有记录结束时间，
-        # 方法1 通过os.path.mtime(logfile)失败，因为中间有一次整体拷贝，ctime被重置了
-        # 方法2 留空或者用平均时间代替
-        if end_time:
+        elif end_time:
             self.run_time = end_time - start_time
             if self.start_time:
                 self.end_time = self.start_time + self.run_time
             elif self.server and self.server.state.time_delta:
                 self.start_time += self.server.state.time_delta
                 self.end_time = self.start_time + self.run_time
+            self.state = Task.STATE_OK
+        else:
+            #一.早期有的log没有记录结束时间
+            # 方法1 通过os.path.mtime(logfile)失败，因为中间有一次整体拷贝，ctime被重置了
+            # 方法2 留空或者用平均时间代替
+            # self.end_time = os.path.mtime(logfile)
+            
+            #二.现在没有end_time,只可能是被Stop或者服务器关机导致程序停止
+            self.state = Task.STATE_STOP
         self.save()
 
     def report(self):
