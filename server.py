@@ -91,7 +91,7 @@ class Server(object):
             'tasks_count'  : len(self.state.running),
             'tasks'        : map(lambda t:t.name, self.state.running),
             'last_update'  : str(self.state.last_update)[:19],
-            'system'       : self.system
+            'system'       : self.state.system
         }
         if with_task:
             data['running'] = [t.report() for t in self.state.running]
@@ -212,11 +212,13 @@ class ServerState(object):
     time_command = "date"
     sys_command = 'lsb_release -d'
     cpu_command = "mpstat 2 1 | awk 'NR==5 {print $3}'"
+    cpu_command_subs = "top -bn 2 -d 1 | grep 'Cpu' | tail -n 1 | awk '{print $2+$4+$6}'"
     mem_command = "free -m | awk 'NR==2{print $4, $2}'"
     disk_command = "df -h %s | awk '{print $4, $2, $5}'"
     # task_command = "armids=$(pgrep aermod);pwdx $armids;ps -o pid,lstart,etime $armids | awk 'NR>1'"
     # task_command = "armids=$(pgrep aermod); paste <(pwdx $armids) <(ps -o pid,lstart,etime $armids|awk 'NR>1')"
     pwdx_command = "pwdx $(pgrep aermod)"
+    pwdx_command = "ps aux | grep run.log | grep -v grep | awk '{print $2\":\"$14}'"
     pime_command = "ps -o pid,lstart,etime $(pgrep aermod) | awk 'NR>1'"
     task_time = "ps -o lstart,etime %s | awk 'NR>1'"
 
@@ -231,9 +233,11 @@ class ServerState(object):
         self.cpu = 0.0
         self.mem = 0.0
         self.disk = 0.0  # free disk space in G
+        self.system = None
         self.running = []
         self.last_update = None
         self.time_delta = None
+        self.cpu_command = ServerState.cpu_command
 
     def update(self):
         self.server.updated = False
@@ -242,10 +246,14 @@ class ServerState(object):
             results = self.server.run_batch(ServerState.core_command, ServerState.time_command, ServerState.sys_command)
             self.cores = int(results[0])
             local_time = context.parse_time(results[1])
-            self.server.system = results[2][13:]
+            # self.system = results[2].[13:]
+            self.system = results[2].split('\t')[1]
+            # TODO: server version rules
+            if self.system.startswith('Red'):
+                self.cpu_command = ServerState.cpu_command_subs
             self.time_delta = master_time - local_time
         self.last_update = master_time
-        results = self.server.run_batch(ServerState.cpu_command, ServerState.pwdx_command)
+        results = self.server.run_batch(self.cpu_command, ServerState.pwdx_command)
         # self.mem = self.server.run(ServerState.mem_command)
         # self.disk = self.server.run(ServerState.disk_command % (self.server.workspace))
 

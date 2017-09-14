@@ -79,9 +79,11 @@ def get_server_by_host(host):
 def get_tasks():
     arg_state = request.args.get('state', 1, int)
     if arg_state==1:
-        running = []
-        for s in app.context.servers:
-            running.extend(s.state.running)
+        running = app.context.running
+        if not running:
+            running = []
+            for s in app.context.servers:
+                running.extend(s.state.running)
         data = {'data' : [t.report() for t in running]}
         # data = requests.get(api_server+'running').json()
     elif arg_state==0:
