@@ -41,7 +41,6 @@ def parse_inp():
                             pass
                         else:
                             out.write(line)
-                    out.close()
                     
 def parse_inp_jam_and_apec():
     pollutants = ["BC", "PM"]
@@ -49,23 +48,22 @@ def parse_inp_jam_and_apec():
     details = [('14', '11', '10'), ('13', '09', '29')]
     hours = ['0'+str(hour) if hour < 10 else str(hour) for hour in range(1, 25)]
     for p in pollutants:
-        in_file = "%s%s_%s/aermod_%s.inp" % (source_inp, p, '0103', '01')
+        # use parsed inp as template
+        in_file = "%s/%s_%s_%s.inp" % (target_inp, p, '0103', '01')
         inp = open(in_file, 'r')
-        lines = inp.readlines()
+        inps = inp.readlines()
         for date, detail in zip(dates, details):
             for hour in hours:
-                new_startend = 'ME STARTEND' + ((' %s %s %s ' % detail) + hour)*2
+                new_startend = 'ME STARTEND' + ((' %s %s %s ' % detail) + hour)*2 + '\n'
                 # print 'ME STARTEND 13 10 03 01 13 10 03 01'
                 # print new_startend
-                # exit()
                 out_file = "%s/%s_%s_%s.inp" % (target_inp, p, date, hour)
                 with open(out_file, 'w') as out:
-                    for line in lines:
+                    for line in inps:
                         if line.startswith('ME STARTEND'):
                             out.write(new_startend)
                         else:
                             out.write(line)
-                    out.close()
 
 def parse_houremis():
     def houremis(pollutant, date):
