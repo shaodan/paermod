@@ -14,13 +14,15 @@ start_str = '       X-COORD (M)   Y-COORD (M)        CONC                       
 end_str = ' *** AERMOD - VERSION'
 
 receptor_number = 45792 #sum(1 for line in open('../source/receptor', 'r'))
-skip_receptors = [(1,51),(213,257),(425,447),(637,641),(849,850),(1061,1061)]
+# skip_receptors = [(1,51),(213,257),(425,447),(637,641),(849,850),(1061,1061)]
 sss = []
-for s in skip_receptors:
-    sss += range(s[0], s[1]+1)
+for line in open('skip_receptors.txt', 'r'):
+    s = line.split(',')
+    sss += range(int(s[0]), int(s[1])+1)
 skip_receptors = set(sss)
 report_number = receptor_number-len(skip_receptors)
 print 'Total %d Receptors, Skip %d of them' % (receptor_number, len(skip_receptors))
+
 
 pd = {
     "BC": ["0103", "0403", "0703", "1003"],
@@ -100,10 +102,10 @@ def parse_psd(p, s, d):
 
 
 
-parse_psd('PM', 'wkd', '0103')
-# parse_psd('PM', 'wkd', '0403')
-# parse_psd('PM', 'wkd', '0703')
-# parse_psd('PM', 'wkd', '1003')
+#parse_psd('PM', 'wkd', '0103')
+parse_psd('PM', 'wkd', '0403')
+parse_psd('PM', 'wkd', '0703')
+parse_psd('PM', 'wkd', '1003')
 
 
 
