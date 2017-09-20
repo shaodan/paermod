@@ -94,7 +94,7 @@ class DBMongo(DB):
             task.state = state
             task.start_time = start_time if start_time else None
             task.end_time = end_time if end_time else None
-            if task.state==Task.STATE_RUNNING and server:
+            if server: # and task.state==Task.STATE_RUNNING
                 task.register(self.server_table[server])
             task_list.append(task)
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#echo $HOSTNAME
+echo $HOSTNAME
 echo $(date) ": start!"
 ./aermod #| while read line; do echo "$(date) : ${line}" ; done
 echo $(date) ": end!"

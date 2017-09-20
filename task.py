@@ -85,6 +85,7 @@ class Task(object):
         # TODO: 先检查完成情况，再拷贝
         if self.state==Task.STATE_RUNNING:
             self.check_finished()
+        print 'Clean Task %s : %s' % (self.name, Task.state_str[self.state])
         if self.state==Task.STATE_OK or self.state==Task.STATE_ERROR:
             self.copy_output_files()
         shutil.rmtree(self.path)
