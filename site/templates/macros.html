@@ -1,13 +1,29 @@
 {# site/templates/macros.html #}
 
-{% macro nav_link(id, href, caption) %}
-{% if id==active_page %}
-  <li class="active"><a href="#"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
-{% else %}
-  <li><a href="{{ href|e }}"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
-{% endif %}
+{% macro nav_link(id, href, caption) -%}
+{%- if id==active_page -%}
+  <li class="active"><a href="#"><i class="fa fa-circle-o"></i>{{caption|e}}</a></li>
+{%- else -%}
+  <li><a href="/{{href|e}}"><i class="fa fa-circle-o"></i>{{caption|e}}</a></li>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro submenu() %}
+            <li class="treeview active">
+              <a href="#">
+                <i class="fa fa-share"></i> <span>{{caption|e}}</span>
+                <span class="pull-right-container">
+                  <i class="fa fa-angle-left pull-right"></i>
+                </span>
+              </a>
+              <ul class="treeview-menu">
+                <li><a href="/tasks.html?state=0"><i class="fa fa-circle-o"></i>Running</a></li>
+                <li class="active"><a href="/tasks.html?state=1"><i class="fa fa-circle-o"></i> Waiting</a></li>
+                <li><a href="/tasks.html?state=2"><i class="fa fa-circle-o"></i>Finished</a></li>
+              </ul>
+            </li>
 {% endmacro %}
 
-{%- macro static_url(filename) -%}
+{% macro static_url(filename) -%}
   {{url_for("static", filename=filename)}}
-{%- endmacro -%}
+{%- endmacro %}

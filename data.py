@@ -46,30 +46,15 @@ class DB(object):
         for server in get_server_table().values():
             tasks.extend(server.state.running_tasks)
         return tasks
-    
-    def add_tasks(self, tasks):
-        context.db = self
-        for t in tasks:
-            t.save()
-            
-    def add_servers(self, servers):
-        context.db = self
-        for s in servers:
-            self.db.servers.insert_one(
-                {
-                    'host'      : s.host,
-                    'workspace' : s.workspace,
-                    'weight'    : s.weight
-                }
-            )
 
-        
+
 class DBMongo(DB):
     
-    def __init__(self):
+    def __init__(self, collection='aermod'):
         super(self.__class__, self).__init__()
         client = MongoClient('localhost', 27017)
-        self.db = client['aermod']
+        # TODO: binding collection to task group
+        self.db = client[collection]
 
     def fetch_data(self):
         #TODO auto-reload data by a timer
@@ -103,6 +88,22 @@ class DBMongo(DB):
     
     def create_table(self, table):
         self.db.add_collection(table)
+        
+    def add_tasks(self, tasks):
+        context.db = self
+        for t in tasks:
+            t.save()
+        
+    def add_servers(self, servers):
+        context.db = self
+        for s in servers:
+            self.db.servers.insert_one(
+                {
+                    'host'      : s.host,
+                    'workspace' : s.workspace,
+                    'weight'    : s.weight
+                }
+            )
     
 
 class DBMockup(DB):

@@ -247,14 +247,13 @@
             ('servers', 'servers.html', 'Servers'),
             ('tasks', 'tasks.html', 'Tasks'),
             ('config', 'config.html', 'Config')] -%}
+          {%- set sub_menu = {
+            'tasks': [(0, 'Running'), (1, 'Waiting'), (2, 'Finished')]
+          } -%}
           {%- set active_page = active_page|default('index') -%}
-          {%- for id, href, caption in navigation_bar -%}
-            {%- if id==active_page %}
-            <li class="active"><a href="#"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
-            {%- else %}
-            <li><a href="/{{ href|e }}"><i class="fa fa-circle-o"></i>{{ caption|e }}</a></li>
-            {%- endif -%}
-          {% endfor %}
+          {% for id, href, caption in navigation_bar %}
+            {{macro.nav_link(id, href, caption)}}
+          {%- endfor %}
           </ul>
         </li>
       </ul>

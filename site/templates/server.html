@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% set title = server['host'] %}
 {% set active_page = "servers" %}
 {% block content %}
     <!-- Content Header (Page header) -->
@@ -20,7 +21,7 @@
         <div class="col-xs-12">
           <div class="box">
             <div class="box-header">
-              <h3 class="box-title">{{server['host']}}: {{server['cpu_load']}}</h3>
+              <h3 class="box-title">{{server['host']}} | {{server['cpu_load']}}</h3>
             </div>
             <!-- /.box-header -->
             {%- set status_style = {
@@ -37,7 +38,7 @@
                   <th>Status</th>
                 </tr>
                 {% for t in server['running'] %}
-                <tr>
+                <tr title='{{ t.path }}'>
                   <td>{{ t.pid }}</td>
                   <td>{{ t.name }}</td>
                   <td>{{ t.rtime }}</td>

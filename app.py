@@ -17,7 +17,7 @@ app = Flask(__name__, template_folder='site/templates', static_folder='site/stat
 # app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 def start_server(port=3000):
-    db = data.DBMongo()
+    db = data.DBMongo('aermod2')
     db.load_data()
     app.context = Context()
     app.monitor = Monitor()
@@ -34,20 +34,20 @@ def start_server(port=3000):
 @app.route('/')
 @app.route('/index.html')
 def index():
-    return render_template('index.html', title='Home')
+    return render_template('index.html')
 
 @app.route('/servers.html', methods = ['GET'])
 def servers_page():
-    return render_template('servers.html', title='Servers')
+    return render_template('servers.html')
 
 @app.route('/tasks.html', methods = ['GET'])
 def tasks_page():
     arg_state = request.args.get('state', 1)
-    return render_template('tasks.html', title='Tasks', state=arg_state)
+    return render_template('tasks.html', state=arg_state)
 
 @app.route('/config.html', methods = ['GET'])
 def config_page():
-    return render_template('config.html', title='Config')
+    return render_template('config.html')
 
 @app.route('/state', methods = ['GET'])
 def get_state():
@@ -70,10 +70,14 @@ def get_servers():
 def get_server_by_host(host):
     # data = requests.get(api_server+'server/'+host).json()
     server = app.context.get_server(host)
-    data = {'data' : server.report(with_task=True)}
-    # resp = jsonify(data)
-    # return resp
-    return render_template('server.html', title=host, server=data['data'])
+    if server:
+        data = {'data' : server.report(with_task=True)}
+        # resp = jsonify(data)
+        # return resp
+    else:
+        #TODO: 404 template
+        data = {'data' : None }
+    return render_template('server.html', server=data['data'])
 
 @app.route('/tasks', methods = ['GET'])
 def get_tasks():

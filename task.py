@@ -125,6 +125,7 @@ class Task(object):
         has_error = False
         start_time = None
         end_time = None
+        log_line = 0
         with open(logfile, 'r') as log:
             for line in log:
                 if line.endswith('start!\n'):
@@ -133,8 +134,12 @@ class Task(object):
                     end_time = context.parse_time(line[:-8])
                 elif line.lower().find('error')>0:
                     has_error = True
+                log_line += 1
         if has_error:
             self.state = Task.STATE_ERROR
+        elif log_line < 4:
+            # sheet20(master)上用kill_all_task方法停止任务时，会有end_time，但是没有程序输出
+            self.state = Task.STATE_STOP
         elif end_time:
             self.run_time = end_time - start_time
             if self.start_time:
@@ -160,7 +165,8 @@ class Task(object):
             'start' : str(self.start_time)[:19],
             'rtime' : context.dt_to_str(self.run_time),
             'state' : Task.state_str[self.state],
-            'pid'   : self.pid
+            'pid'   : self.pid,
+            'path'  : self.path
         }
 
     def copy_run_files(self):
