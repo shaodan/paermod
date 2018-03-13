@@ -14,7 +14,7 @@ from context import Context
 context = Context()
 
 class Server(object):
-    
+
     def __init__(self, host, workspace=None, weight=1):
         self.host = host
         self.workspace = workspace
@@ -84,7 +84,7 @@ class Server(object):
         # context.get_task(task_name).register(self) for task_name in self.state.state.running
 
     def report(self, with_task=False):
-        data = { 
+        data = {
             'host'         : self.host,
             'cores'        : self.state.cores,
             'cpu_load'     : '%.2f%%' % self.state.cpu,
@@ -111,10 +111,10 @@ class Server(object):
             # SCP copy
             self.sftp = self._ssh.open_sftp()
             self.sftp.put(source, target)
-        # todo: check copy sucess
+        # todo: check copy success
         if state:
             raise IOError('copy file error')
-            
+
     def is_remote_dir(self, path):
         return path.find(':') > 0
 
@@ -154,14 +154,14 @@ class Server(object):
         chan.exec_command(command)
         # f.read()
         # f.close()
-        
+
     def kill_all_task(self):
         return self.run(ServerState.kill_aermods)
-    
+
     def kill_by_pid(self):
         return self.run(ServerState.kill_pid+str(pid))
 
-        
+
 class LocalServer(Server):
 
     def __init__(self, host, workspace=None, weight=1):
@@ -191,10 +191,10 @@ class LocalServer(Server):
         # command = "nohup " + command + " &"
         self.run(command, wait=False)
         # os.system(command)
-        
-        
+
+
 class ServerFactory(object):
-    
+
     def createServer(self, c):
         if isinstance(c, dict):
             host = c['host'].encode()
